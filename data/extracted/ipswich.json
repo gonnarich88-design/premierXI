@@ -1,0 +1,32 @@
+{
+  "team": "ipswich",
+  "cards": [
+    {"file":"Akpom.png","ovr":76,"position":"ST","altPositions":[],"nation":"England","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":64.6},
+    {"file":"Al Hamadi.png","ovr":66,"position":"ST","altPositions":[],"nation":"Iraq","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":57.3},
+    {"file":"Baggott.png","ovr":63,"position":"CB","altPositions":[],"nation":"Indonesia","foot":"L","skillMoves":2,"weakFoot":3,"indexRating":56.0},
+    {"file":"Burns.png","ovr":72,"position":"RM","altPositions":["RW"],"nation":"Wales","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":66.6},
+    {"file":"Button.png","ovr":62,"position":"GK","altPositions":[],"nation":"England","foot":"R","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"Clarke.png","ovr":70,"position":"RB","altPositions":[],"nation":"England","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":60.5},
+    {"file":"Davis.png","ovr":76,"position":"LB","altPositions":["LM"],"nation":"England","foot":"L","skillMoves":3,"weakFoot":2,"indexRating":65.9},
+    {"file":"Egeli.png","ovr":68,"position":"RW","altPositions":["RM","LW"],"nation":"Norway","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":59.3},
+    {"file":"Furlong.png","ovr":72,"position":"RB","altPositions":[],"nation":"England","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":61.3},
+    {"file":"Greaves.png","ovr":74,"position":"CB","altPositions":[],"nation":"England","foot":"L","skillMoves":2,"weakFoot":2,"indexRating":65.1},
+    {"file":"Hirst.png","ovr":72,"position":"ST","altPositions":[],"nation":"Scotland","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":60.3},
+    {"file":"Humphreys.png","ovr":67,"position":"CM","altPositions":["CDM","CAM"],"nation":"England","foot":"L","skillMoves":2,"weakFoot":2,"indexRating":57.9},
+    {"file":"JClarke.png","ovr":74,"position":"LM","altPositions":["LW"],"nation":"England","foot":"R","skillMoves":4,"weakFoot":4,"indexRating":64.7},
+    {"file":"Johnson.png","ovr":72,"position":"RB","altPositions":["RM"],"nation":"England","foot":"R","skillMoves":2,"weakFoot":4,"indexRating":60.1},
+    {"file":"Kipré.png","ovr":74,"position":"CB","altPositions":[],"nation":"Ivory Coast","foot":"R","skillMoves":2,"weakFoot":2,"indexRating":66.0},
+    {"file":"Matusiwa.png","ovr":76,"position":"CDM","altPositions":["CB","CM"],"nation":"Netherlands","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":67.6},
+    {"file":"McAteer.png","ovr":71,"position":"RM","altPositions":["CAM","RW"],"nation":"Ireland","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":61.1},
+    {"file":"Mehmeti.png","ovr":72,"position":"LM","altPositions":["CAM","LW"],"nation":"Albania","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":64.2},
+    {"file":"Núñez.png","ovr":73,"position":"CM","altPositions":["CDM"],"nation":"Chile","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":64.3},
+    {"file":"Ogbene.png","ovr":74,"position":"RM","altPositions":["RB","RW"],"nation":"Ireland","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":67.1},
+    {"file":"O'Shea.png","ovr":75,"position":"CB","altPositions":["RB"],"nation":"Ireland","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":66.7},
+    {"file":"Palmer.png","ovr":73,"position":"GK","altPositions":[],"nation":"England","foot":"R","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"Philogene.png","ovr":75,"position":"LM","altPositions":["RM","LW"],"nation":"England","foot":"R","skillMoves":4,"weakFoot":5,"indexRating":67.5},
+    {"file":"Slicker.png","ovr":61,"position":"GK","altPositions":[],"nation":"Scotland","foot":"R","skillMoves":1,"weakFoot":2,"indexRating":null},
+    {"file":"Szmodics.png","ovr":74,"position":"LM","altPositions":["CAM","ST","LW"],"nation":"Ireland","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":66.1},
+    {"file":"Taylor.png","ovr":70,"position":"CDM","altPositions":["CM"],"nation":"Ireland","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":61.5},
+    {"file":"Walton.png","ovr":69,"position":"GK","altPositions":[],"nation":"England","foot":"L","skillMoves":1,"weakFoot":2,"indexRating":null}
+  ]
+}

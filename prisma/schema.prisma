@@ -1,0 +1,131 @@
+// Premier XI — Prisma schema
+// NOTE: SQLite ไม่รองรับ native enum จึงใช้ String + constants ที่ src/lib/constants.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// ผู้เล่น / บัญชีผู้ใช้ (รวมกระเป๋าเงินทุกสกุล)
+model User {
+  id           String  @id @default(cuid())
+  username     String  @unique
+  phone        String  @unique
+  passwordHash String
+  isAdmin      Boolean @default(false)
+
+  // Account progression
+  level Int @default(1)
+  exp   Int @default(0)
+
+  // Currencies (Phase 0 economy)
+  silver     Int @default(0)
+  gold       Int @default(0)
+  packTicket Int @default(0)
+  shards     Int @default(0)
+
+  // Pity: จำนวนครั้งที่เปิด Premium ติดกันโดยยังไม่ได้ Gold
+  pityCounter Int @default(0)
+
+  // Daily login
+  loginStreak   Int       @default(0)
+  lastClaimDate DateTime?
+
+  // Onboarding
+  starterClaimed Boolean @default(false)
+
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+
+  cards UserCard[]
+  squad Squad?
+}
+
+/// นักเตะจริง (ตัวตนของนักเตะ 1 คน — หนึ่งคนมีได้หลายการ์ด/หลายเวอร์ชัน)
+model Player {
+  id       String @id @default(cuid())
+  name     String
+  club     String
+  nation   String
+  league   String @default("Premier League")
+  position String // ตำแหน่งหลัก (ดู POSITIONS ใน constants)
+
+  cards     Card[]
+  createdAt DateTime @default(now())
+}
+
+/// การ์ด = เวอร์ชันหนึ่งของนักเตะ (เช่น Salah Gold, Salah TOTW) พร้อมค่าพลัง
+model Card {
+  id       String @id @default(cuid())
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  tier     String // Bronze, Silver, Gold, Elite, Hero, Icon, Event, TOTW, TOTS, Legend
+  category String @default("normal") // normal | special
+  position String
+
+  ovr       Int
+  pace      Int
+  shooting  Int
+  passing   Int
+  dribbling Int
+  defending Int
+  physical  Int
+
+  // ข้อมูลเสริมที่อ่านจากหน้าการ์ด
+  altPositions String? // คั่นด้วย comma เช่น "LM,ST"
+  foot         String? // R | L
+  skillMoves   Int? // 1-5
+  weakFoot     Int? // 1-5
+  indexRating  Float? // เลขในกรอบสีเขียวมุมล่างขวา
+
+  imageUrl  String?
+  isStarter Boolean @default(false) // ใช้ในกล่อง Starter Pack ได้หรือไม่
+
+  owners     UserCard[]
+  squadSlots SquadSlot[]
+  createdAt  DateTime   @default(now())
+
+  @@index([tier])
+  @@index([category])
+}
+
+/// ความเป็นเจ้าของการ์ดของผู้เล่น (ถือได้ 1 ใบต่อการ์ด — ซ้ำ = แปลงเป็น shard)
+model UserCard {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  acquiredAt DateTime @default(now())
+
+  @@unique([userId, cardId])
+  @@index([userId])
+}
+
+/// ทีมของผู้เล่น (หนึ่งทีมต่อผู้ใช้)
+model Squad {
+  id        String      @id @default(cuid())
+  userId    String      @unique
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formation String      @default("4-3-3")
+  slots     SquadSlot[]
+  updatedAt DateTime    @updatedAt
+}
+
+/// ช่องในทีม (0-10) ผูกกับการ์ดที่ผู้เล่นมี
+model SquadSlot {
+  id      String  @id @default(cuid())
+  squadId String
+  squad   Squad   @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  index   Int
+  cardId  String?
+  card    Card?   @relation(fields: [cardId], references: [id], onDelete: SetNull)
+
+  @@unique([squadId, index])
+}
