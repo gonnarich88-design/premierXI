@@ -100,3 +100,19 @@ export async function devLoginAction() {
   await createSession(user.id);
   redirect("/");
 }
+
+// เริ่มใหม่: ลบบัญชี test เดิม (การ์ด + ทีม cascade) แล้วสร้างใหม่ + ล็อกอิน = เข้าครั้งแรก
+export async function resetTestUserAction() {
+  await prisma.user.deleteMany({ where: { username: TEST_USERNAME } });
+  const user = await prisma.user.create({
+    data: {
+      username: TEST_USERNAME,
+      phone: TEST_PHONE,
+      passwordHash: hashPassword(TEST_PASSWORD),
+      lastLoginAt: new Date(),
+    },
+    select: { id: true },
+  });
+  await createSession(user.id);
+  redirect("/");
+}

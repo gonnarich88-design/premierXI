@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { devLoginAction } from "@/app/actions/auth";
+import { devLoginAction, resetTestUserAction } from "@/app/actions/auth";
 import { getDailyStatus } from "@/lib/daily";
 import DailyClaim from "@/components/DailyClaim";
 
@@ -55,6 +55,14 @@ function GuestHome() {
           className="w-full rounded-xl border border-dashed border-accent/60 bg-surface py-3 text-sm font-semibold text-accent"
         >
           เข้าสู่ระบบด้วยบัญชีทดสอบ (test)
+        </button>
+      </form>
+      <form action={resetTestUserAction}>
+        <button
+          type="submit"
+          className="w-full rounded-xl border border-dashed border-border bg-surface py-3 text-sm font-semibold text-muted"
+        >
+          เริ่มใหม่ (ล้าง test แล้วเข้าครั้งแรก)
         </button>
       </form>
     </section>
