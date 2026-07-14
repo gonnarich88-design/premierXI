@@ -73,6 +73,8 @@ export type OpenResult = {
   isDuplicate: boolean;
   shardsGained: number;
   pity: number;
+  leveledUp: boolean;
+  level: number;
 };
 
 export async function openPack(
@@ -167,6 +169,8 @@ export async function openPack(
       isDuplicate,
       shardsGained,
       pity: nextPity,
+      leveledUp: level > user.level,
+      level,
     };
   });
 }

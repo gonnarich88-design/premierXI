@@ -74,3 +74,12 @@ export const TIER_COLOR: Record<CardTier, string> = {
 
 /** อัตราแลกเปลี่ยน mock: ฝาก 100 บาท = 10 Gold */
 export const DEPOSIT_RATE_GOLD_PER_BAHT = 10 / 100;
+
+/** ชนิดการแจ้งเตือน (Notification.type — เก็บเป็น String แทน enum) */
+export const NOTIFICATION_TYPES = [
+  "DAILY_REWARD",
+  "PACK_OPENED",
+  "LEVEL_UP",
+  "SYSTEM",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

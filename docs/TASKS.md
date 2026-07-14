@@ -57,6 +57,15 @@
 - [ ] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
 - [ ] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
 
+## ขั้น 5.5 — Notification Center
+- [x] Schema: `Notification` (per-user) + `Announcement` (ข่าว broadcast) + `type` String ตาม constants + `User.lastReadNewsAt` + migrate
+- [x] lib/notifications: `createNotification` (best-effort ไม่ throw), `getUnreadCount`, `getNotificationCenter`, `markAllRead`
+- [x] Header กระดิ่ง + badge ใน layout (แสดงเฉพาะ logged-in) → หน้า `/notifications`
+- [x] หน้า `/notifications`: รวมข่าว + กิจกรรม, เปิดแล้ว mark read (ล้าง badge)
+- [x] Admin: `/admin/news` (gate `isAdmin`) เขียน/เผยแพร่/ลบประกาศ + ลิงก์จากหน้า Profile
+- [x] Wire triggers: รับรางวัลรายวัน · เปิดซอง (normal + starter) · level up (ตัด PvP — ยังไม่ทำจริง)
+- [x] Verify: prisma migrate + tsc + lint + build + smoke test data layer (unread 3→0)
+
 ## ขั้น 6 — Phase 3: PvP
 - [ ] Matchmaking (จับคู่กับทีมผู้เล่นอื่น / bot)
 - [ ] เครื่องคำนวณผล: พลังทีม + Chemistry + Formation + random modifier

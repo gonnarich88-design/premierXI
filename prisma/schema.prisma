@@ -38,11 +38,16 @@ model User {
   // Onboarding
   starterClaimed Boolean @default(false)
 
+  // Notification center: เวลาที่อ่านข่าว (Announcement) ล่าสุด — ใช้คำนวณ unread ของข่าว
+  lastReadNewsAt DateTime?
+
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
 
-  cards UserCard[]
-  squad Squad?
+  cards         UserCard[]
+  squad         Squad?
+  notifications Notification[]
+  announcements Announcement[] @relation("AnnouncementAuthor")
 }
 
 /// นักเตะจริง (ตัวตนของนักเตะ 1 คน — หนึ่งคนมีได้หลายการ์ด/หลายเวอร์ชัน)
@@ -128,4 +133,37 @@ model SquadSlot {
   card    Card?   @relation(fields: [cardId], references: [id], onDelete: SetNull)
 
   @@unique([squadId, index])
+}
+
+/// การแจ้งเตือนกิจกรรมส่วนตัวของผู้เล่น (เปิดซอง/เลเวลอัพ/รับรางวัล ฯลฯ)
+/// type เป็น String ตาม constants (SQLite ไม่รองรับ enum) — ดู NOTIFICATION_TYPE ใน src/lib/constants.ts
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type  String
+  title String
+  body  String?
+  href  String? // deep link เช่น /collection, /pack
+
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+/// ข่าว/ประกาศแบบ broadcast (admin เขียน เห็นทุกคน)
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  authorId String?
+  author   User?   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([published, createdAt])
 }

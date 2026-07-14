@@ -6,6 +6,7 @@ import {
   StarterAlreadyClaimedError,
   type StarterCard,
 } from "@/lib/starter";
+import { createNotification } from "@/lib/notifications";
 
 export type OpenStarterResponse =
   | { ok: true; cards: StarterCard[] }
@@ -17,6 +18,15 @@ export async function openStarterPackAction(): Promise<OpenStarterResponse> {
 
   try {
     const { cards } = await openStarterPack(userId);
+
+    await createNotification({
+      userId,
+      type: "PACK_OPENED",
+      title: "เปิด Starter Pack สำเร็จ",
+      body: `ได้การ์ดเริ่มต้น ${cards.length} ใบ`,
+      href: "/collection",
+    });
+
     return { ok: true, cards };
   } catch (e) {
     if (e instanceof StarterAlreadyClaimedError) {

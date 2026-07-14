@@ -52,7 +52,7 @@ export async function getDailyStatus(userId: string): Promise<DailyStatus> {
 }
 
 export type ClaimResult =
-  | { ok: true; reward: DailyReward; streak: number }
+  | { ok: true; reward: DailyReward; streak: number; leveledUp: boolean; level: number }
   | { ok: false; error: string };
 
 export async function claimDaily(userId: string): Promise<ClaimResult> {
@@ -92,6 +92,6 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
       },
     });
 
-    return { ok: true, reward, streak };
+    return { ok: true, reward, streak, leveledUp: level > user.level, level };
   });
 }

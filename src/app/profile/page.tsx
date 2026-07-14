@@ -40,6 +40,15 @@ export default async function ProfilePage() {
         ดูคลังการ์ดทั้งหมด
       </Link>
 
+      {user.isAdmin && (
+        <Link
+          href="/admin/news"
+          className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+        >
+          จัดการข่าว (Admin)
+        </Link>
+      )}
+
       <form action={logoutAction}>
         <button
           type="submit"
