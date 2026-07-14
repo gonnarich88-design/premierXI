@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { devLoginAction, resetTestUserAction } from "@/app/actions/auth";
 import { getDailyStatus } from "@/lib/daily";
 import DailyClaim from "@/components/DailyClaim";
+import StarterPackModal from "@/components/StarterPackModal";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -121,20 +122,23 @@ async function LoggedInHome({
 
       {/* Starter Pack — ยังไม่เปิด */}
       {!user.starterClaimed && (
-        <Link
-          href="/pack"
-          className="block rounded-2xl border border-accent bg-gradient-to-br from-primary/25 to-accent/20 p-4"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-bold">Starter Pack รอเปิด</span>
-            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-              ฟรี
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs text-muted">
-            เปิดฟรีเพื่อรับการ์ดตั้งต้น 11 ใบ + 300 Silver + 1 Ticket → แตะที่นี่
-          </p>
-        </Link>
+        <>
+          <StarterPackModal />
+          <Link
+            href="/pack"
+            className="block rounded-2xl border border-accent bg-gradient-to-br from-primary/25 to-accent/20 p-4"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-bold">Starter Pack รอเปิด</span>
+              <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                ฟรี
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted">
+              เปิดฟรีเพื่อรับการ์ดตั้งต้น 11 ใบ + 300 Silver + 1 Ticket → แตะที่นี่
+            </p>
+          </Link>
+        </>
       )}
 
       {/* Daily login */}
