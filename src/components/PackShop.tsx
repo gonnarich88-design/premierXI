@@ -192,37 +192,60 @@ export default function PackShop({
 
       {/* Reveal overlay */}
       {phase !== "idle" && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-black/80 px-6 py-8 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm">
           {phase === "opening" && (
-            <div className="pack-shake text-center">
-              <div className="mx-auto flex h-40 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-5xl font-black text-primary-foreground shadow-2xl">
-                ?
+            <div className="flex flex-1 items-center justify-center px-6">
+              <div className="pack-shake text-center">
+                <div className="mx-auto flex h-40 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-5xl font-black text-primary-foreground shadow-2xl">
+                  ?
+                </div>
+                <p className="mt-4 text-sm text-muted">กำลังเปิดซอง...</p>
               </div>
-              <p className="mt-4 text-sm text-muted">กำลังเปิดซอง...</p>
             </div>
           )}
 
           {phase === "revealed" && reveal && isStarter && (
-            <div className="flex w-full max-w-md flex-col items-center">
-              <p className="mb-4 text-center text-lg font-bold">
+            <div className="flex min-h-0 flex-1 flex-col items-center px-6 pt-8">
+              <p className="shrink-0 text-center text-xs font-semibold uppercase tracking-wide text-accent">
+                ยินดีต้อนรับสู่ Premier XI
+              </p>
+              <p className="mb-4 shrink-0 text-center text-lg font-bold">
                 Starter Pack —{" "}
                 <span className="text-accent">การ์ด {reveal.cards.length} ใบ</span>
               </p>
-              <div className="grid w-full grid-cols-3 gap-2">
-                {reveal.cards.map((c) => (
-                  <div key={c.id} className="card-reveal">
-                    <PlayerCard
-                      imageUrl={c.imageUrl}
-                      name={c.playerName}
-                      ovr={c.ovr}
-                      position={c.position}
-                    />
-                  </div>
-                ))}
+              <div className="w-full max-w-md min-h-0 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-3 gap-3 pb-2">
+                  {reveal.cards.map((c, i) => {
+                    const isGold = c.tier === "Gold";
+                    const glow = TIER_COLOR[c.tier as CardTier] ?? "#8b5cf6";
+                    return (
+                      <div
+                        key={c.id}
+                        className="card-reveal relative"
+                        style={{
+                          animationDelay: `${i * 60}ms`,
+                          filter: `drop-shadow(0 0 ${isGold ? 10 : 3}px ${glow})`,
+                        }}
+                      >
+                        {isGold && (
+                          <span className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-gold px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-primary-foreground shadow">
+                            Gold
+                          </span>
+                        )}
+                        <PlayerCard
+                          imageUrl={c.imageUrl}
+                          name={c.playerName}
+                          ovr={c.ovr}
+                          position={c.position}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <button
                 onClick={close}
-                className="mt-6 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground hover:bg-primary-strong"
+                className="my-4 shrink-0 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground hover:bg-primary-strong"
               >
                 เริ่มจัดทีม
               </button>
@@ -230,7 +253,7 @@ export default function PackShop({
           )}
 
           {phase === "revealed" && reveal && !isStarter && (
-            <div className="flex w-full max-w-xs flex-col items-center">
+            <div className="flex flex-1 flex-col items-center justify-center px-6">
               {(() => {
                 const card = reveal.cards[0];
                 return (
