@@ -145,7 +145,7 @@ export default function TeamBuilder({
           onClick={() => !pending && setSheetSlot(null)}
         >
           <div
-            className="max-h-[70vh] w-full overflow-y-auto rounded-t-2xl border-t border-border bg-surface p-4"
+            className="mx-auto max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-2xl border-t border-border bg-surface p-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
