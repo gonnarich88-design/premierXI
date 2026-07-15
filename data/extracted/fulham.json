@@ -1,0 +1,236 @@
+{
+  "team": "fulham",
+  "cards": [
+    {
+      "file": "Andersen.png",
+      "ovr": 78,
+      "position": "CB",
+      "altPositions": [],
+      "nation": "Denmark",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 4,
+      "indexRating": 65.0
+    },
+    {
+      "file": "Bassey.png",
+      "ovr": 78,
+      "position": "CB",
+      "altPositions": [],
+      "nation": "Nigeria",
+      "foot": "L",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 68.2
+    },
+    {
+      "file": "Berge.png",
+      "ovr": 79,
+      "position": "CDM",
+      "altPositions": ["CB", "CM"],
+      "nation": "Norway",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 64.9
+    },
+    {
+      "file": "Bobb.png",
+      "ovr": 72,
+      "position": "RW",
+      "altPositions": ["RM", "LW"],
+      "nation": "Norway",
+      "foot": "L",
+      "skillMoves": 4,
+      "weakFoot": 3,
+      "indexRating": 64.4
+    },
+    {
+      "file": "Cairney.png",
+      "ovr": 74,
+      "position": "CM",
+      "altPositions": ["CDM", "CAM"],
+      "nation": "Scotland",
+      "foot": "L",
+      "skillMoves": 3,
+      "weakFoot": 2,
+      "indexRating": 60.5
+    },
+    {
+      "file": "Castagne.png",
+      "ovr": 76,
+      "position": "RB",
+      "altPositions": ["RM"],
+      "nation": "Belgium",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 61.2
+    },
+    {
+      "file": "Diop.png",
+      "ovr": 76,
+      "position": "CB",
+      "altPositions": [],
+      "nation": "France",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 64.1
+    },
+    {
+      "file": "Harris.png",
+      "ovr": 65,
+      "position": "CAM",
+      "altPositions": ["CM", "ST"],
+      "nation": "Wales",
+      "foot": "R",
+      "skillMoves": 3,
+      "weakFoot": 3,
+      "indexRating": 57.4
+    },
+    {
+      "file": "Iwobi.png",
+      "ovr": 80,
+      "position": "LM",
+      "altPositions": ["RM", "LW"],
+      "nation": "Nigeria",
+      "foot": "R",
+      "skillMoves": 4,
+      "weakFoot": 3,
+      "indexRating": 70.2
+    },
+    {
+      "file": "Jorge Cuenca.png",
+      "ovr": 74,
+      "position": "CB",
+      "altPositions": [],
+      "nation": "Spain",
+      "foot": "L",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 64.1
+    },
+    {
+      "file": "King.png",
+      "ovr": 68,
+      "position": "CM",
+      "altPositions": ["CDM", "CAM"],
+      "nation": "England",
+      "foot": "R",
+      "skillMoves": 3,
+      "weakFoot": 4,
+      "indexRating": 58.8
+    },
+    {
+      "file": "Kusi-Asare.png",
+      "ovr": 60,
+      "position": "ST",
+      "altPositions": [],
+      "nation": "Sweden",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 50.4
+    },
+    {
+      "file": "Lecomte.png",
+      "ovr": 74,
+      "position": "GK",
+      "altPositions": [],
+      "nation": "France",
+      "foot": "L",
+      "skillMoves": 1,
+      "weakFoot": 3,
+      "indexRating": null
+    },
+    {
+      "file": "Leno.png",
+      "ovr": 80,
+      "position": "GK",
+      "altPositions": [],
+      "nation": "Germany",
+      "foot": "R",
+      "skillMoves": 1,
+      "weakFoot": 3,
+      "indexRating": null
+    },
+    {
+      "file": "Lukić.png",
+      "ovr": 78,
+      "position": "CDM",
+      "altPositions": ["CM"],
+      "nation": "Serbia",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 65.7
+    },
+    {
+      "file": "Reed.png",
+      "ovr": 72,
+      "position": "CDM",
+      "altPositions": ["CM"],
+      "nation": "England",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 3,
+      "indexRating": 59.4
+    },
+    {
+      "file": "Robinson.png",
+      "ovr": 82,
+      "position": "LB",
+      "altPositions": ["LM"],
+      "nation": "United States",
+      "foot": "L",
+      "skillMoves": 3,
+      "weakFoot": 3,
+      "indexRating": 75.3
+    },
+    {
+      "file": "Rodrigo Muniz.png",
+      "ovr": 75,
+      "position": "ST",
+      "altPositions": [],
+      "nation": "Brazil",
+      "foot": "R",
+      "skillMoves": 3,
+      "weakFoot": 3,
+      "indexRating": 64.4
+    },
+    {
+      "file": "Sessegnon.png",
+      "ovr": 75,
+      "position": "LB",
+      "altPositions": [],
+      "nation": "England",
+      "foot": "L",
+      "skillMoves": 4,
+      "weakFoot": 3,
+      "indexRating": 65.1
+    },
+    {
+      "file": "Smith Rowe.png",
+      "ovr": 77,
+      "position": "CAM",
+      "altPositions": ["CM", "LM"],
+      "nation": "England",
+      "foot": "R",
+      "skillMoves": 4,
+      "weakFoot": 4,
+      "indexRating": 68.0
+    },
+    {
+      "file": "Tete.png",
+      "ovr": 77,
+      "position": "RB",
+      "altPositions": ["RM"],
+      "nation": "Netherlands",
+      "foot": "R",
+      "skillMoves": 2,
+      "weakFoot": 2,
+      "indexRating": 62.9
+    }
+  ]
+}

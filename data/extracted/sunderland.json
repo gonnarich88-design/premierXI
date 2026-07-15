@@ -1,0 +1,33 @@
+{
+  "team": "sunderland",
+  "cards": [
+    {"file":"Abdullahi.png","ovr":58,"position":"ST","altPositions":[],"nation":"Nigeria","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":52.3},
+    {"file":"Adingra.png","ovr":76,"position":"RM","altPositions":["LM","RW"],"nation":"Ivory Coast","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":67.2},
+    {"file":"Alderete.png","ovr":78,"position":"CB","altPositions":[],"nation":"Paraguay","foot":"L","skillMoves":2,"weakFoot":3,"indexRating":65.8},
+    {"file":"Alese.png","ovr":66,"position":"LB","altPositions":["CB"],"nation":"England","foot":"L","skillMoves":2,"weakFoot":3,"indexRating":60.5},
+    {"file":"Angulo.png","ovr":67,"position":"LM","altPositions":["RM","LW"],"nation":"Ecuador","foot":"R","skillMoves":4,"weakFoot":4,"indexRating":57.9},
+    {"file":"Ballard.png","ovr":73,"position":"CB","altPositions":[],"nation":"Northern Ireland","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":62.5},
+    {"file":"Brobbey.png","ovr":77,"position":"ST","altPositions":[],"nation":"Netherlands","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":69.3},
+    {"file":"Browne.png","ovr":72,"position":"CM","altPositions":["CAM"],"nation":"Ireland","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":64.1},
+    {"file":"Diarra.png","ovr":77,"position":"CM","altPositions":["CAM"],"nation":"Senegal","foot":"R","skillMoves":2,"weakFoot":2,"indexRating":63.5},
+    {"file":"Ellborg.png","ovr":62,"position":"GK","altPositions":[],"nation":"Sweden","foot":"R","skillMoves":1,"weakFoot":1,"indexRating":null},
+    {"file":"Hjelde.png","ovr":66,"position":"LB","altPositions":["CB","LM"],"nation":"Norway","foot":"L","skillMoves":2,"weakFoot":3,"indexRating":57.3},
+    {"file":"Hume.png","ovr":74,"position":"RB","altPositions":["CB"],"nation":"Northern Ireland","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":65.3},
+    {"file":"Isidor.png","ovr":72,"position":"ST","altPositions":[],"nation":"Haiti","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":61.5},
+    {"file":"Le Fée.png","ovr":76,"position":"CM","altPositions":["LM","CAM","LW"],"nation":"France","foot":"R","skillMoves":4,"weakFoot":3,"indexRating":68.1},
+    {"file":"Masuaku.png","ovr":75,"position":"LB","altPositions":["LM"],"nation":"DR Congo","foot":"L","skillMoves":4,"weakFoot":2,"indexRating":66.7},
+    {"file":"Moore.png","ovr":66,"position":"GK","altPositions":[],"nation":"England","foot":"R","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"Mukiele.png","ovr":79,"position":"RB","altPositions":["CB","RM"],"nation":"France","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":67.5},
+    {"file":"Mundle.png","ovr":71,"position":"LM","altPositions":["RM","LW"],"nation":"England","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":61.3},
+    {"file":"O'Nien.png","ovr":72,"position":"CB","altPositions":[],"nation":"England","foot":"R","skillMoves":2,"weakFoot":4,"indexRating":64.8},
+    {"file":"Patterson (1).png","ovr":73,"position":"GK","altPositions":[],"nation":"England","foot":"R","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"Pembélé.png","ovr":70,"position":"RB","altPositions":["CB","RM"],"nation":"France","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":60.6},
+    {"file":"Reinildo.png","ovr":79,"position":"LB","altPositions":["CB","LM"],"nation":"Mozambique","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":68.3},
+    {"file":"Rigg.png","ovr":70,"position":"CAM","altPositions":["CM"],"nation":"England","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":59.9},
+    {"file":"Roefs.png","ovr":74,"position":"GK","altPositions":[],"nation":"Netherlands","foot":"L","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"Sadiki.png","ovr":74,"position":"CM","altPositions":["CDM","CAM"],"nation":"DR Congo","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":63.6},
+    {"file":"Seelt.png","ovr":66,"position":"CB","altPositions":["RB","RM"],"nation":"Netherlands","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":57.8},
+    {"file":"Talbi.png","ovr":73,"position":"RM","altPositions":["LM","RW"],"nation":"Morocco","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":65.8},
+    {"file":"Xhaka.png","ovr":85,"position":"CDM","altPositions":["CM"],"nation":"Switzerland","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":71.5}
+  ]
+}

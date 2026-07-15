@@ -1,0 +1,29 @@
+{
+  "team": "everton",
+  "cards": [
+    {"file":"Alcaraz.png","ovr":75,"position":"CAM","altPositions":["CM","ST"],"nation":"Argentina","foot":"R","skillMoves":4,"weakFoot":3,"indexRating":66.7},
+    {"file":"Armstrong.png","ovr":67,"position":"CDM","altPositions":["CM"],"nation":"England","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":57.3},
+    {"file":"Aznou.png","ovr":66,"position":"LB","altPositions":[],"nation":"Morocco","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":57.9},
+    {"file":"Barry.png","ovr":77,"position":"ST","altPositions":[],"nation":"France","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":66.8},
+    {"file":"Beto.png","ovr":76,"position":"ST","altPositions":[],"nation":"Guinea-Bissau","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":64.3},
+    {"file":"Branthwaite.png","ovr":79,"position":"CB","altPositions":[],"nation":"England","foot":"L","skillMoves":2,"weakFoot":5,"indexRating":69.9},
+    {"file":"Dewsbury-Hall.png","ovr":77,"position":"CM","altPositions":["CDM","CAM"],"nation":"England","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":65.8},
+    {"file":"Dibling.png","ovr":74,"position":"RM","altPositions":["CAM","RW"],"nation":"England","foot":"L","skillMoves":3,"weakFoot":3,"indexRating":64.7},
+    {"file":"Garner.png","ovr":76,"position":"CDM","altPositions":["CM"],"nation":"England","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":63.8},
+    {"file":"George.png","ovr":71,"position":"LM","altPositions":["RM","ST","LW"],"nation":"England","foot":"R","skillMoves":4,"weakFoot":4,"indexRating":64.6},
+    {"file":"Gueye.png","ovr":79,"position":"CDM","altPositions":["CM"],"nation":"Senegal","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":67.7},
+    {"file":"Hackney.png","ovr":73,"position":"CDM","altPositions":["CM"],"nation":"England","foot":"R","skillMoves":3,"weakFoot":3,"indexRating":64.1},
+    {"file":"Iroegbunam.png","ovr":74,"position":"CDM","altPositions":["CM"],"nation":"England","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":63.0},
+    {"file":"Keane.png","ovr":73,"position":"CB","altPositions":[],"nation":"England","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":58.7},
+    {"file":"King.png","ovr":64,"position":"GK","altPositions":[],"nation":"Wales","foot":"R","skillMoves":1,"weakFoot":3,"indexRating":null},
+    {"file":"McNeil.png","ovr":78,"position":"LM","altPositions":["RM","CAM","LW"],"nation":"England","foot":"L","skillMoves":3,"weakFoot":2,"indexRating":68.0},
+    {"file":"Mykolenko.png","ovr":78,"position":"LB","altPositions":["LM"],"nation":"Ukraine","foot":"L","skillMoves":2,"weakFoot":2,"indexRating":63.5},
+    {"file":"Ndiaye.png","ovr":79,"position":"LM","altPositions":["LW"],"nation":"Senegal","foot":"R","skillMoves":4,"weakFoot":4,"indexRating":68.4},
+    {"file":"O'Brien.png","ovr":76,"position":"CB","altPositions":["RB","RM"],"nation":"Ireland","foot":"R","skillMoves":2,"weakFoot":3,"indexRating":67.0},
+    {"file":"Patterson.png","ovr":71,"position":"RB","altPositions":["RM"],"nation":"Scotland","foot":"R","skillMoves":2,"weakFoot":2,"indexRating":59.4},
+    {"file":"Pickford.png","ovr":84,"position":"GK","altPositions":[],"nation":"England","foot":"L","skillMoves":1,"weakFoot":4,"indexRating":null},
+    {"file":"Röhl.png","ovr":74,"position":"CAM","altPositions":["CDM","CM","ST"],"nation":"Germany","foot":"R","skillMoves":3,"weakFoot":4,"indexRating":63.7},
+    {"file":"Tarkowski.png","ovr":80,"position":"CB","altPositions":[],"nation":"England","foot":"R","skillMoves":2,"weakFoot":4,"indexRating":67.7},
+    {"file":"Travers.png","ovr":72,"position":"GK","altPositions":[],"nation":"Ireland","foot":"R","skillMoves":1,"weakFoot":2,"indexRating":null}
+  ]
+}
