@@ -21,7 +21,7 @@
 - [x] กำหนดค่า tier/position เป็น String (SQLite ไม่รองรับ enum) + constants กลาง
 - [x] Migrate สร้าง dev.db + Prisma client singleton
 - [x] Seed ข้อมูลนักเตะ Big 6 (41 players / 45 cards / 11 starter)
-- [x] Service ชั้น economy: เพิ่ม/หักเงิน + guard กันติดลบ + grantExp + mockDeposit
+- [x] Service ชั้น economy: เพิ่ม/หักเงิน + guard กันติดลบ + mockDeposit (EXP/level-up logic ย้ายมารวมที่ `applyExp()`/`levelReward()` ใน ขั้น 5 แทน `grantExp()` เดิม)
 - [x] Mock deposit helper (simulate เติม Gold — endpoint จริงต่อในขั้น Auth)
 
 ## ขั้น 2 — Auth & Onboarding
@@ -79,7 +79,8 @@
 ## ขั้น 4 — Team Building
 - [x] เลือก Formation (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) พร้อมพิกัดบนสนาม
 - [x] วางนักเตะ 11 คนตามตำแหน่ง (แตะช่อง → เลือกการ์ด, กันใช้ซ้ำ)
-- [x] คำนวณ Chemistry (สโมสร/ลีก/ชาติ + ตรงตำแหน่ง) + team rating
+- [x] คำนวณ Chemistry (สโมสร/ลีก/ชาติ + ตรงตำแหน่ง) + team rating — เพิ่ม OVR Penalty ตามตำแหน่ง 2026-07-16 (กลุ่มเดียวกัน -10, คนละกลุ่ม -25) กันกลยุทธ์ยัดการ์ด OVR สูงสุดไม่สนตำแหน่ง ดู `docs/game-guide.md` หัวข้อ 10 + 13.2
+- [~] Chemistry: แก้ avgOvr ให้หารด้วย 11 คงที่ (ปิดช่องโหว่ทีมไม่ครบยัง rating สูง) + เพิ่ม Full Unity bonus (ครบ 11 คนสโมสรเดียวกัน+ตำแหน่ง exact ทุกคน → rating +2 experimental + เส้นเขียว/badge บนสนาม) — ดีไซน์ผ่านการรีวิวจาก Sonnet + Codex แล้ว สเปคที่ `docs/superpowers/specs/2026-07-16-chemistry-full-team-design.md`
 - [x] บันทึกทีมของผู้เล่น (Squad/SquadSlot) + verify end-to-end
 
 ## ขั้น 5 — Phase 1: สะสมแต้ม
@@ -87,9 +88,12 @@
 - [ ] Daily Mission / Weekly Mission (track ความคืบหน้า + รับรางวัล)
 - [ ] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
 - [ ] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
-- [ ] Level milestone rewards — ตาม gdd.txt "3. EXP" (ทุก Level ได้ Silver + Pack + Cosmetic) ตอนนี้เลเวลอัพยังไม่ให้อะไรเลยนอกจาก notification
-  - แนวคิด: milestone table (เลเวลสูงขึ้น รางวัลดีขึ้น) แทนแจกเท่ากันทุกเลเวล — ยังไม่ได้ตกลงว่า lv ไหนได้อะไร (รอคุยรอบหน้า)
-  - Cosmetic ตาม GDD ยังไม่มีระบบรองรับในโค้ดเลย ต้องออกแบบ/สร้างใหม่ทั้งหมด (scope แยกจาก milestone reward) — ทำ Silver/Pack Ticket/Gold ก่อน ค่อยเพิ่ม Cosmetic ทีหลัง
+- [x] Level milestone rewards — **แก้แล้ว 2026-07-16** ตาม gdd.txt "3. EXP" (ทุก Level ได้ Silver + Pack, Cosmetic ข้ามไปก่อนเพราะยังไม่มีระบบรองรับ):
+  - รวม logic level-up ที่ก็อปซ้ำ 3 ที่ (`economy.ts` dead code เดิม, `packs.ts`, `daily.ts`) เป็น `applyExp()` (pure function คำนวณ level/exp/levelsGained) + `levelReward()` (ตารางรางวัล) ใน `src/lib/economy.ts` ตัวเดียว — `finalizeOpen` (packs.ts) และ `claimDaily` (daily.ts) เรียกร่วมกัน
+  - ตารางรางวัล: **ทุกเลเวล** = Silver `level×20` · **ทุก 5 เลเวล** (5,10,15,20...) = + Standard Pack ฟรี · **ทุก 10 เลเวล** = + Evolution Pack ฟรี + Gold 5 · **ทุก 25 เลเวล** = + Royal Prime Pack ฟรี + Gold 10 (เช็คจากสูงไปต่ำ ได้แค่ระดับเดียวต่อเลเวล กันซ้อนทับตอนหารลงตัวหลายเงื่อนไข)
+  - แจ้งผ่าน notification `LEVEL_UP` เดิม (ไม่สร้าง UI ใหม่) เพิ่ม `body` บอกยอด Silver/Gold/ชื่อซองที่ได้ — ฟังก์ชันรวมอยู่ที่ `notifyLevelRewards()` ใน `src/lib/notifications.ts` ใช้ร่วมกันทั้ง `actions/pack.ts`/`actions/daily.ts`
+  - แก้บั๊กที่เจอระหว่างทำ: `claimDaily` เดิมรายงาน `leveledUp`/`level` จากค่าก่อนเช็ค login milestone (ถ้า milestone แจกซองฟรีแล้วซองนั้นดันเลื่อนเลเวลเพิ่มอีก ค่าที่ return จะไม่อัปเดตตาม) ตอนนี้ทั้ง `finalizeOpen`/`claimDaily` เอา `level`/`levelRewards` ล่าสุดจากผลของ `grantFreePack` ที่เรียกซ้อนมาสรุปเป็นค่าสุดท้ายก่อน return แล้ว (ทดสอบจริงด้วยสคริปต์ยิง level 4→5, 9→10 ข้าม milestone แล้ว silver/gold/level ตรงตามที่ควรได้)
+  - Cosmetic ตาม GDD ยังไม่มีระบบรองรับในโค้ดเลย ยังไม่ทำ (scope แยก)
   - Formation unlock ตาม level ที่เคยเสนอไว้ **ตัดทิ้งแล้ว** — เช็ค gdd.txt แล้วไม่มีในดีไซน์ต้นฉบับ (Formation ใน GDD ผูกกับ PvP เท่านั้น)
 
 ## ขั้น 5.5 — Notification Center
@@ -107,7 +111,7 @@
 - [ ] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold
   - แนวคิดรางวัล (วิเคราะห์ไว้แล้ว รอตกลง): hybrid EXP+Silver — ชนะ 25exp/60silver (×0.5-1.5 ตาม opponent strength), แพ้ 8exp/15silver (เฉพาะโควตาฟรี 5 ครั้ง ไม่รวมแมตช์ที่ซื้อด้วย gold), win-streak bonus +5exp/ชนะติดกัน (เพดาน +15)
   - เหตุผล: silver/แมตช์ต้องต่ำกว่าค่า gold ที่จ่ายซื้อ เพื่อกัน pay-to-farm loop (ซื้อแมตช์ด้วย gold คุ้มน้อยกว่าเอา gold ไปเปิด Evolution/Royal Prime Pack โดยตรง — อัพเดตชื่อ pack ตาม ขั้น 3.5 ที่ยกเลิก Premium Pack ไปแล้ว)
-  - implement ควรเรียกผ่าน `grantExp()` ใน `economy.ts` (ตอนนี้เป็น dead code ไม่มีใครเรียก) แทน copy logic level-up ซ้ำแบบใน `daily.ts`/`packs.ts`
+  - implement ควรเรียกผ่าน `applyExp()`/`levelReward()` ใน `economy.ts` (แก้ที่ ขั้น 5 แล้ว — เดิมเป็น `grantExp()` dead code ตอนนี้ถูกแทนที่แล้ว) ตามแพทเทิร์นเดียวกับ `finalizeOpen` ใน `packs.ts`/`claimDaily` ใน `daily.ts`: เรียก `applyExp` ได้ level/exp/levelsGained ใหม่ → รวม silver/gold bonus เข้า `tx.user.update` เดียวกัน → ค่อยแจกซองฟรีถ้ามี milestone
 - [ ] Ranking 6 tier (Bronze→Legend) + season reset + reward
 
 ## ขั้น 7 — Phase 4: Fantasy Premier XI
@@ -127,7 +131,12 @@
 - [ ] ตั้งค่าอัตราสุ่ม pack + event
 
 ## ขั้น 10 — Polish & Verify
-- [ ] ตรวจ balance เศรษฐกิจ (กัน Gold เฟ้อ / การ์ดล้น)
+- [~] ตรวจ balance เศรษฐกิจ (กัน Gold เฟ้อ / การ์ดล้น) — รีวิวเต็ม + ทดสอบจริงแล้ว บันทึกไว้ที่ `docs/game-guide.md` หัวข้อ 13 (2026-07-16) แก้ไปแล้ว 3 เรื่อง: Standard pack Gold rate (7%→25%), weekly Gold trickle (2→5), shard exchange rebate gap (Standard cost 600→500), เพิ่ม OVR penalty กันเล่นผิดตำแหน่ง — **ยังเหลือ**:
+  - [x] **Critical (แก้แล้ว 2026-07-16):** `devLoginAction`/`resetTestUserAction` ใน `src/app/actions/auth.ts` เดิมเรียกได้โดยไม่ต้อง login/ไม่เช็คอะไรเลย — เพิ่ม gate `ENABLE_DEV_LOGIN=true` (env var เฉพาะ ไม่ใช้ `NODE_ENV` เพราะ preview รัน `next build && next start` ทำให้ `NODE_ENV` เป็น `production` เสมอ) ไม่ตั้งค่า → เรียก action ได้ `notFound()` (404) และปุ่มใน `login/page.tsx`/`page.tsx` ถูกซ่อน ต้องลบ `ENABLE_DEV_LOGIN` ออกจาก `.env` (หรือไม่ตั้งใน env ของ deploy จริง) ก่อนขึ้น production
+  - [x] **High (แก้แล้ว 2026-07-16):** เปิดซอง/เคลม daily พร้อมกันตั้งแต่ 5 request ขึ้นไปเคย deadlock ล้มหมดทุก request — เติม `?connection_limit=1` ต่อท้าย `DATABASE_URL` ใน `.env` แล้ว ทดสอบซ้ำด้วย `openPack` พร้อมกัน 8 request → สำเร็จหมด ไม่มี fail
+  - [ ] **Medium:** หักเงินแบบอ่านก่อนค่อย decrement ไม่มีเงื่อนไขระดับ DB — ปลอดภัยบน SQLite ตอนนี้ แต่ถ้าย้าย DB ในอนาคตต้องเปลี่ยนเป็น atomic conditional update ก่อน
+  - [x] **Chemistry — แก้แล้ว 2026-07-16:** league link (`LINK_WEIGHT.league` = 0.5) เคยทำให้ทุกทีมได้ teamChem floor 22/33 (67%) อัตโนมัติเพราะการ์ดทุกใบเป็น Premier League หมด (100% แมตช์เสมอ) พิสูจน์ด้วยจำลองทีมที่ไม่มี synergy จริงเลยก็ยังได้ 22/33 — ตัดสินใจ (ยืนยันกับทีมแล้ว: เกมนี้จะมีแต่ Premier League ลีกเดียวตลอดไป ไม่มีแผนเพิ่มลีกอื่น) **ตัด league ออกจากสูตรทั้งหมด** (`LINK_WEIGHT`, `ChemEntry.league`, `team/page.tsx`) เหลือแค่ club (+2) กับ nation (+1) ผลหลังแก้: worst-case (ไม่มี synergy) = 0/33, best-case (คลับ+ชาติเดียวกันหมด) = 33/33, ทีมผสมทั่วไป (จับคู่คลับบางส่วน) ~14/33 — ได้ range เต็ม 0-33 ที่มีความหมายกับการจัดทีมจริงแล้ว. `MAX_CHEM_RATING_BONUS` (0.10) **ตัดสินใจคงค่าเดิมไว้ก่อน** เพราะที่ avgOVR 80: worst=80, best=+8 (88), ทีมผสมทั่วไป=+3 (83) ถือว่าเป็น spread ที่มีน้ำหนักสมเหตุสมผลแล้วหลังแก้ floor bug (เดิมที่ "รู้สึกต่ำ" เป็นเพราะ floor bug บีบ range ให้แคบ ไม่ใช่เพราะ cap ต่ำจริง) — รอ feedback จากการเล่นจริงถ้าต้องปรับอีกทีหลัง
+  - [ ] Royal Prime/Evolution pool ไม่มีการ์ดตำแหน่ง LB เลย (Royal Prime ไม่มี RB ด้วย) — ต้องมี asset รูปการ์ดใหม่ก่อนถึงจะเพิ่มได้ เป็นงาน content แยกต่างหาก
 - [ ] Responsive ครบทุกหน้า (มือถือเป็นหลัก)
 - [ ] เตรียมความเข้ากันได้กับ Telegram Mini App
 - [ ] ทดสอบ core loop end-to-end
