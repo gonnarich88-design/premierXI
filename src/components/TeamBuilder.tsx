@@ -36,6 +36,7 @@ export default function TeamBuilder({
   rating,
   teamChem,
   filled,
+  fullUnity,
 }: {
   formation: string;
   formations: string[];
@@ -44,6 +45,7 @@ export default function TeamBuilder({
   rating: number;
   teamChem: number;
   filled: number;
+  fullUnity: boolean;
 }) {
   const router = useRouter();
   const [sheetSlot, setSheetSlot] = useState<Slot | null>(null);
@@ -76,6 +78,14 @@ export default function TeamBuilder({
         <Stat label="ผู้เล่น" value={`${filled}/11`} className="text-foreground" />
       </div>
 
+      {fullUnity && (
+        <div className="mb-3 flex justify-center">
+          <span className="rounded-full border border-emerald-400/60 bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-400">
+            Full Unity
+          </span>
+        </div>
+      )}
+
       {/* Formation selector */}
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {formations.map((f) => (
@@ -98,6 +108,23 @@ export default function TeamBuilder({
         {/* markings */}
         <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/15" />
         <div className="absolute left-0 top-1/2 h-px w-full bg-white/15" />
+
+        {fullUnity && (
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-0 h-full w-full"
+          >
+            <polygon
+              points={ringPoints(slots)}
+              fill="none"
+              stroke="#4ade80"
+              strokeWidth="0.6"
+              strokeLinejoin="round"
+              opacity="0.85"
+            />
+          </svg>
+        )}
 
         {slots.map((s) => (
           <button
@@ -235,4 +262,13 @@ function Stat({
       <div className="text-[10px] text-muted">{label}</div>
     </div>
   );
+}
+
+function ringPoints(points: { x: number; y: number }[]): string {
+  const cx = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+  const cy = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+  const sorted = [...points].sort(
+    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx),
+  );
+  return sorted.map((p) => `${p.x},${p.y}`).join(" ");
 }

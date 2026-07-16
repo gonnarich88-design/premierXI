@@ -29,7 +29,6 @@ export default async function TeamPage() {
       altPositions: card.altPositions ? card.altPositions.split(",") : [],
       club: card.player.club,
       nation: card.player.nation,
-      league: card.player.league,
       slotPos: slot.pos,
     };
   });
@@ -77,6 +76,7 @@ export default async function TeamPage() {
       rating={chem.rating}
       teamChem={chem.teamChem}
       filled={chem.filled}
+      fullUnity={chem.fullUnity}
     />
   );
 }
