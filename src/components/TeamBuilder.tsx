@@ -194,13 +194,20 @@ export default function TeamBuilder({
             </div>
 
             {(() => {
-              const candidates = ownedCards.filter(
-                (c) =>
-                  c.position === sheetSlot.pos ||
-                  c.altPositions.includes(sheetSlot.pos) ||
-                  POSITION_GROUP[c.position as Position] ===
-                    POSITION_GROUP[sheetSlot.pos as Position],
-              );
+              const fitRank = (c: OwnedCard) => {
+                if (c.position === sheetSlot.pos) return 0;
+                if (c.altPositions.includes(sheetSlot.pos)) return 1;
+                return 2;
+              };
+              const candidates = ownedCards
+                .filter(
+                  (c) =>
+                    c.position === sheetSlot.pos ||
+                    c.altPositions.includes(sheetSlot.pos) ||
+                    POSITION_GROUP[c.position as Position] ===
+                      POSITION_GROUP[sheetSlot.pos as Position],
+                )
+                .sort((a, b) => fitRank(a) - fitRank(b));
               if (candidates.length === 0) {
                 return (
                   <p className="py-6 text-center text-sm text-muted">
@@ -264,11 +271,60 @@ function Stat({
   );
 }
 
+// วาง 11 จุดเป็นห่วงเดียวไม่ตัดกัน: หา convex hull ก่อน (จุดที่อยู่ขอบสุด) แล้วแทรกจุดที่เหลือ
+// (เช่น กองกลางตัวกลางที่อยู่ในกรอบ) เข้าไปตรง edge ที่ทำให้เส้นยาวขึ้นน้อยที่สุด (cheapest insertion)
+// วิธี centroid-angle-sort เดิมพังเมื่อมีจุดอยู่ใกล้จุดศูนย์กลางพอดี (เช่น CM ตรงกลางสนาม) ทำให้มุมไม่เสถียร
+// และวาดเส้นตัดผ่านกลางสนาม — cheapest insertion การันตีว่าไม่มีเส้นไหนตัดกันเอง
 function ringPoints(points: { x: number; y: number }[]): string {
-  const cx = points.reduce((sum, p) => sum + p.x, 0) / points.length;
-  const cy = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-  const sorted = [...points].sort(
-    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx),
+  const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+
+  const byX = [...points.keys()].sort(
+    (i, j) => points[i].x - points[j].x || points[i].y - points[j].y,
   );
-  return sorted.map((p) => `${p.x},${p.y}`).join(" ");
+  const cross = (o: number, a: number, b: number) =>
+    (points[a].x - points[o].x) * (points[b].y - points[o].y) -
+    (points[a].y - points[o].y) * (points[b].x - points[o].x);
+
+  const lower: number[] = [];
+  for (const i of byX) {
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0
+    )
+      lower.pop();
+    lower.push(i);
+  }
+  const upper: number[] = [];
+  for (let k = byX.length - 1; k >= 0; k--) {
+    const i = byX[k];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0
+    )
+      upper.pop();
+    upper.push(i);
+  }
+  lower.pop();
+  upper.pop();
+  const tour = lower.concat(upper);
+
+  const remaining = [...points.keys()].filter((i) => !tour.includes(i));
+  for (const p of remaining) {
+    let bestPos = 0;
+    let bestCost = Infinity;
+    for (let k = 0; k < tour.length; k++) {
+      const a = tour[k];
+      const b = tour[(k + 1) % tour.length];
+      const cost =
+        dist(points[a], points[p]) + dist(points[p], points[b]) - dist(points[a], points[b]);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestPos = k + 1;
+      }
+    }
+    tour.splice(bestPos, 0, p);
+  }
+
+  return tour.map((i) => `${points[i].x},${points[i].y}`).join(" ");
 }
