@@ -1,4 +1,11 @@
 import { POSITION_GROUP, type Position } from "@/lib/constants";
+import {
+  LINK_WEIGHT,
+  LINK_SCORE_THRESHOLDS,
+  POSITION_FACTOR,
+  MAX_TEAM_CHEM,
+  MAX_CHEM_RATING_BONUS,
+} from "@/lib/chemistryConfig";
 
 export type ChemEntry = {
   ovr: number;
@@ -46,27 +53,24 @@ export function computeChemistry(entries: (ChemEntry | null)[]): ChemResult {
     let linkScore = 0;
     for (const other of filledEntries) {
       if (other === e) continue;
-      if (other.club === e.club) linkScore += 2;
-      if (other.nation === e.nation) linkScore += 1;
-      if (other.league === e.league) linkScore += 0.5;
+      if (other.club === e.club) linkScore += LINK_WEIGHT.club;
+      if (other.nation === e.nation) linkScore += LINK_WEIGHT.nation;
+      if (other.league === e.league) linkScore += LINK_WEIGHT.league;
     }
 
     // แปลง linkScore → 0-3
-    let base: number;
-    if (linkScore >= 9) base = 3;
-    else if (linkScore >= 5) base = 2;
-    else if (linkScore >= 2) base = 1;
-    else base = 0;
+    const base =
+      LINK_SCORE_THRESHOLDS.find((t) => linkScore >= t.min)?.base ?? 0;
 
     // factor ตำแหน่ง
     let factor: number;
-    if (positionFits(e)) factor = 1;
+    if (positionFits(e)) factor = POSITION_FACTOR.exact;
     else if (
       POSITION_GROUP[e.position as Position] ===
       POSITION_GROUP[e.slotPos as Position]
     )
-      factor = 0.6;
-    else factor = 0.3;
+      factor = POSITION_FACTOR.sameGroup;
+    else factor = POSITION_FACTOR.offGroup;
 
     return Math.round(base * factor);
   });
@@ -75,8 +79,10 @@ export function computeChemistry(entries: (ChemEntry | null)[]): ChemResult {
   const avgOvr = Math.round(
     filledEntries.reduce((a, e) => a + e.ovr, 0) / filled,
   );
-  // chemistry เต็ม 33 → โบนัสสูงสุด +10%
-  const rating = Math.round(avgOvr * (1 + teamChem / 330));
+  // chemistry เต็ม MAX_TEAM_CHEM → โบนัสสูงสุด MAX_CHEM_RATING_BONUS
+  const rating = Math.round(
+    avgOvr * (1 + (teamChem / MAX_TEAM_CHEM) * MAX_CHEM_RATING_BONUS),
+  );
 
   return { teamChem, avgOvr, rating, filled, perSlot };
 }

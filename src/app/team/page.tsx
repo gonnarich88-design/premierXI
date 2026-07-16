@@ -65,6 +65,7 @@ export default async function TeamPage() {
     imageUrl: uc.card.imageUrl,
     name: uc.card.player.name,
     club: uc.card.player.club,
+    altPositions: uc.card.altPositions ? uc.card.altPositions.split(",") : [],
   }));
 
   return (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import PlayerCard from "@/components/PlayerCard";
 import { setFormationAction, assignSlotAction } from "@/app/actions/squad";
 import { POSITION_GROUP, type Position } from "@/lib/constants";
+import { MAX_TEAM_CHEM } from "@/lib/chemistryConfig";
 
 type Card = {
   id: string;
@@ -15,6 +16,8 @@ type Card = {
   name: string;
   club: string;
 };
+
+type OwnedCard = Card & { altPositions: string[] };
 
 type Slot = {
   index: number;
@@ -37,7 +40,7 @@ export default function TeamBuilder({
   formation: string;
   formations: string[];
   slots: Slot[];
-  ownedCards: Card[];
+  ownedCards: OwnedCard[];
   rating: number;
   teamChem: number;
   filled: number;
@@ -69,7 +72,7 @@ export default function TeamBuilder({
       {/* Header stats */}
       <div className="mb-3 grid grid-cols-3 gap-2 text-center">
         <Stat label="Rating" value={rating || "-"} className="text-primary" />
-        <Stat label="Chemistry" value={`${teamChem}/33`} className="text-accent" />
+        <Stat label="Chemistry" value={`${teamChem}/${MAX_TEAM_CHEM}`} className="text-accent" />
         <Stat label="ผู้เล่น" value={`${filled}/11`} className="text-foreground" />
       </div>
 
@@ -163,35 +166,53 @@ export default function TeamBuilder({
               )}
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {ownedCards.map((c) => {
-                const used = usedIds.has(c.id) && c.id !== sheetSlot.card?.id;
-                const fits =
+            {(() => {
+              const candidates = ownedCards.filter(
+                (c) =>
                   c.position === sheetSlot.pos ||
+                  c.altPositions.includes(sheetSlot.pos) ||
                   POSITION_GROUP[c.position as Position] ===
-                    POSITION_GROUP[sheetSlot.pos as Position];
+                    POSITION_GROUP[sheetSlot.pos as Position],
+              );
+              if (candidates.length === 0) {
                 return (
-                  <button
-                    key={c.id}
-                    onClick={() => !used && assign(sheetSlot.index, c.id)}
-                    disabled={pending || used}
-                    className={`relative rounded-lg p-0.5 ${
-                      fits ? "ring-1 ring-accent" : ""
-                    } ${used ? "opacity-30" : ""}`}
-                  >
-                    <PlayerCard
-                      imageUrl={c.imageUrl}
-                      name={c.name}
-                      ovr={c.ovr}
-                      position={c.position}
-                    />
-                    <span className="mt-0.5 block truncate text-center text-[9px] text-muted">
-                      {c.ovr} {c.position}
-                    </span>
-                  </button>
+                  <p className="py-6 text-center text-sm text-muted">
+                    ไม่มีการ์ดที่เล่นตำแหน่ง {sheetSlot.pos} ได้
+                  </p>
                 );
-              })}
-            </div>
+              }
+              return (
+                <div className="grid grid-cols-4 gap-2">
+                  {candidates.map((c) => {
+                    const used =
+                      usedIds.has(c.id) && c.id !== sheetSlot.card?.id;
+                    const exactFit =
+                      c.position === sheetSlot.pos ||
+                      c.altPositions.includes(sheetSlot.pos);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => !used && assign(sheetSlot.index, c.id)}
+                        disabled={pending || used}
+                        className={`relative rounded-lg p-0.5 ${
+                          exactFit ? "ring-1 ring-accent" : ""
+                        } ${used ? "opacity-30" : ""}`}
+                      >
+                        <PlayerCard
+                          imageUrl={c.imageUrl}
+                          name={c.name}
+                          ovr={c.ovr}
+                          position={c.position}
+                        />
+                        <span className="mt-0.5 block truncate text-center text-[9px] text-muted">
+                          {c.ovr} {c.position}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
