@@ -23,20 +23,30 @@ model User {
   exp   Int @default(0)
 
   // Currencies (Phase 0 economy)
-  silver     Int @default(0)
-  gold       Int @default(0)
-  packTicket Int @default(0)
-  shards     Int @default(0)
+  silver      Int @default(0)
+  gold        Int @default(0)
+  packTicket  Int @default(0) // เดิมใช้เปิด Ticket Pack — ยกเลิก pack นั้นแล้ว เก็บ field ไว้เผื่ออนาคต ไม่แจกเพิ่มแล้ว
+  shards      Int @default(0) // จากการ์ดซ้ำ tier Bronze/Silver/Gold (Standard pack) — แลกเปิด Standard Pack ฟรี
+  evoShards   Int @default(0) // จากการ์ดซ้ำ tier Hero (Evolution pack) — แลกเปิด Evolution Pack ฟรี
+  primeShards Int @default(0) // จากการ์ดซ้ำ tier Legend (Royal Prime pack) — แลกเปิด Royal Prime Pack ฟรี
 
-  // Pity: จำนวนครั้งที่เปิด Premium ติดกันโดยยังไม่ได้ Gold
+  // Pity: จำนวนครั้งที่เปิด Premium ติดกันโดยยังไม่ได้ Gold (ไม่ได้ใช้แล้วหลังยกเลิก Premium pack — เก็บไว้เผื่ออนาคต)
   pityCounter Int @default(0)
 
   // Daily login
   loginStreak   Int       @default(0)
   lastClaimDate DateTime?
+  totalLogins   Int       @default(0) // จำนวนวันที่เคย login รวม (ไม่รีเซ็ตแม้ streak ขาด) — ใช้เช็ค milestone
 
   // Onboarding
   starterClaimed Boolean @default(false)
+
+  // Launch promotion: milestone แจกซองพิเศษฟรีครั้งเดียวตอน login ครบ 15/30 วัน (นับจาก totalLogins ไม่ใช่ streak)
+  evoMilestoneClaimed   Boolean @default(false)
+  primeMilestoneClaimed Boolean @default(false)
+
+  // Launch promotion: โบนัส Gold +20% ตอนเติมเงินจริงครั้งแรก
+  hasDeposited Boolean @default(false)
 
   // Notification center: เวลาที่อ่านข่าว (Announcement) ล่าสุด — ใช้คำนวณ unread ของข่าว
   lastReadNewsAt DateTime?

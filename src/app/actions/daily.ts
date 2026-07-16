@@ -31,6 +31,16 @@ export async function claimDailyAction(): Promise<ClaimResult> {
         href: "/profile",
       });
     }
+    if (result.milestone) {
+      const packName = result.milestone.packId === "evolution" ? "Evolution Pack" : "Royal Prime Pack";
+      await createNotification({
+        userId,
+        type: "PACK_OPENED",
+        title: `Login ครบตามเป้า! ได้ ${packName} ฟรี 🎁`,
+        body: `เปิดฟรี ${result.milestone.cards.length} ใบ — โปรโมชั่นเปิดตัวเกม`,
+        href: "/collection",
+      });
+    }
   }
   return result;
 }

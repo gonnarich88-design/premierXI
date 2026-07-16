@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { openPackAction } from "@/app/actions/pack";
+import { openPackAction, openPackWithShardsAction } from "@/app/actions/pack";
 import { openStarterPackAction } from "@/app/actions/starter";
 import { TIER_COLOR, type CardTier } from "@/lib/constants";
 import PlayerCard from "@/components/PlayerCard";
@@ -10,11 +10,18 @@ import PlayerCard from "@/components/PlayerCard";
 type PackMeta = {
   id: string;
   name: string;
-  currency: "silver" | "gold" | "packTicket" | "shards";
+  currency: "silver" | "gold" | "packTicket" | "shards" | "evoShards" | "primeShards";
   cost: number;
   desc: string;
-  rates: { Bronze: number; Silver: number; Gold: number };
-  pityThreshold: number | null;
+  fillerRates: { Bronze: number; Silver: number; Gold: number };
+  special: { category: string; bonusChance: number } | null;
+};
+
+type ShardExchange = {
+  id: string;
+  packId: string;
+  field: "shards" | "evoShards" | "primeShards";
+  cost: number;
 };
 
 type Wallet = {
@@ -22,6 +29,8 @@ type Wallet = {
   gold: number;
   packTicket: number;
   shards: number;
+  evoShards: number;
+  primeShards: number;
 };
 
 type RevealCard = {
@@ -32,12 +41,14 @@ type RevealCard = {
   imageUrl: string | null;
   playerName: string;
   club: string;
+  isDuplicate: boolean;
+  shardsGained: number;
+  isSpecial: boolean;
 };
 
 type Reveal = {
   cards: RevealCard[];
-  isDuplicate: boolean;
-  shardsGained: number;
+  isStarter: boolean;
 };
 
 const CURRENCY_LABEL: Record<string, string> = {
@@ -45,17 +56,19 @@ const CURRENCY_LABEL: Record<string, string> = {
   gold: "Gold",
   packTicket: "Ticket",
   shards: "Shards",
+  evoShards: "Evo Shards",
+  primeShards: "Prime Shards",
 };
 
 export default function PackShop({
   packs,
+  shardExchanges,
   wallet,
-  pity,
   starterClaimed,
 }: {
   packs: PackMeta[];
+  shardExchanges: ShardExchange[];
   wallet: Wallet;
-  pity: number;
   starterClaimed: boolean;
 }) {
   const router = useRouter();
@@ -63,24 +76,19 @@ export default function PackShop({
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleOpen(pack: PackMeta) {
+  async function runOpen(action: () => Promise<Awaited<ReturnType<typeof openPackAction>>>) {
     if (phase === "opening") return;
     setError(null);
     setReveal(null);
     setPhase("opening");
-    const res = await openPackAction(pack.id);
+    const res = await action();
     if (!res.ok) {
       setError(res.error);
       setPhase("idle");
       return;
     }
-    // หน่วงเล็กน้อยให้เห็น animation ซองสั่น
     setTimeout(() => {
-      setReveal({
-        cards: [res.result.card],
-        isDuplicate: res.result.isDuplicate,
-        shardsGained: res.result.shardsGained,
-      });
+      setReveal({ cards: res.result.cards, isStarter: false });
       setPhase("revealed");
     }, 900);
   }
@@ -97,7 +105,10 @@ export default function PackShop({
       return;
     }
     setTimeout(() => {
-      setReveal({ cards: res.cards, isDuplicate: false, shardsGained: 0 });
+      setReveal({
+        cards: res.cards.map((c) => ({ ...c, isDuplicate: false, shardsGained: 0, isSpecial: false })),
+        isStarter: true,
+      });
       setPhase("revealed");
     }, 900);
   }
@@ -108,23 +119,21 @@ export default function PackShop({
     router.refresh();
   }
 
-  const isStarter = (reveal?.cards.length ?? 0) > 1;
-
   return (
     <div className="px-4 pt-6">
-      <header className="mb-4 flex items-center justify-between">
+      <header className="mb-4">
         <h1 className="text-xl font-bold">เปิดซองนักเตะ</h1>
-        <div className="flex gap-3 text-xs">
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
           <span className="text-silver">Silver {wallet.silver.toLocaleString()}</span>
           <span className="text-gold">Gold {wallet.gold}</span>
-          <span className="text-accent">Ticket {wallet.packTicket}</span>
+          <span className="text-muted">Shards {wallet.shards}</span>
+          <span className="text-accent">Evo Shards {wallet.evoShards}</span>
+          <span className="text-accent">Prime Shards {wallet.primeShards}</span>
         </div>
       </header>
 
       {error && (
-        <p className="mb-3 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
+        <p className="mb-3 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300">{error}</p>
       )}
 
       {/* Starter Pack — ฟรีครั้งแรก */}
@@ -139,7 +148,7 @@ export default function PackShop({
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-muted">
-                รับครั้งแรก: การ์ดตั้งต้น 11 ใบ (ครบทุกตำแหน่ง) + 300 Silver + 1 Ticket
+                รับครั้งแรก: การ์ดตั้งต้น 11 ใบ (ครบทุกตำแหน่ง) + 300 Silver
               </p>
             </div>
             <button
@@ -157,33 +166,45 @@ export default function PackShop({
         {packs.map((pack) => {
           const balance = wallet[pack.currency];
           const canAfford = balance >= pack.cost;
+          const exchange = shardExchanges.find((e) => e.packId === pack.id);
           return (
             <div
               key={pack.id}
               className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4"
             >
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
                   <h2 className="font-bold">{pack.name}</h2>
                   <p className="mt-0.5 text-xs text-muted">{pack.desc}</p>
                   <div className="mt-2 flex gap-2 text-[10px] text-muted">
-                    <TierPct label="Bronze" v={pack.rates.Bronze} />
-                    <TierPct label="Silver" v={pack.rates.Silver} />
-                    <TierPct label="Gold" v={pack.rates.Gold} />
+                    <TierPct label="Bronze" v={pack.fillerRates.Bronze} />
+                    <TierPct label="Silver" v={pack.fillerRates.Silver} />
+                    <TierPct label="Gold" v={pack.fillerRates.Gold} />
                   </div>
-                  {pack.pityThreshold && (
+                  {pack.special && (
                     <p className="mt-1 text-[10px] text-accent">
-                      Pity: {pity}/{pack.pityThreshold} → การันตี Gold
+                      การันตี 1 ใบพิเศษ + {Math.round(pack.special.bonusChance * 100)}% ลุ้นใบที่ 2
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleOpen(pack)}
-                  disabled={!canAfford || phase === "opening"}
-                  className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:bg-primary-strong disabled:opacity-40"
-                >
-                  {pack.cost} {CURRENCY_LABEL[pack.currency]}
-                </button>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <button
+                    onClick={() => runOpen(() => openPackAction(pack.id))}
+                    disabled={!canAfford || phase === "opening"}
+                    className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:bg-primary-strong disabled:opacity-40"
+                  >
+                    {pack.cost} {CURRENCY_LABEL[pack.currency]}
+                  </button>
+                  {exchange && (
+                    <button
+                      onClick={() => runOpen(() => openPackWithShardsAction(exchange.id))}
+                      disabled={wallet[exchange.field] < exchange.cost || phase === "opening"}
+                      className="rounded-xl border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
+                    >
+                      แลก {exchange.cost} {CURRENCY_LABEL[exchange.field]}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -204,32 +225,31 @@ export default function PackShop({
             </div>
           )}
 
-          {phase === "revealed" && reveal && isStarter && (
+          {phase === "revealed" && reveal && (
             <div className="flex min-h-0 flex-1 flex-col items-center px-6 pt-8">
               <p className="shrink-0 text-center text-xs font-semibold uppercase tracking-wide text-accent">
-                ยินดีต้อนรับสู่ Premier XI
+                {reveal.isStarter ? "ยินดีต้อนรับสู่ Premier XI" : "ผลการเปิดซอง"}
               </p>
               <p className="mb-4 shrink-0 text-center text-lg font-bold">
-                Starter Pack —{" "}
-                <span className="text-accent">การ์ด {reveal.cards.length} ใบ</span>
+                {reveal.isStarter ? "Starter Pack" : "การ์ดที่ได้"} —{" "}
+                <span className="text-accent">{reveal.cards.length} ใบ</span>
               </p>
               <div className="w-full max-w-md min-h-0 flex-1 overflow-y-auto">
                 <div className="grid grid-cols-3 gap-3 pb-2">
                   {reveal.cards.map((c, i) => {
-                    const isGold = c.tier === "Gold";
                     const glow = TIER_COLOR[c.tier as CardTier] ?? "#8b5cf6";
                     return (
                       <div
-                        key={c.id}
+                        key={`${c.id}-${i}`}
                         className="card-reveal relative"
                         style={{
                           animationDelay: `${i * 60}ms`,
-                          filter: `drop-shadow(0 0 ${isGold ? 10 : 3}px ${glow})`,
+                          filter: `drop-shadow(0 0 ${c.isSpecial ? 12 : 3}px ${glow})`,
                         }}
                       >
-                        {isGold && (
-                          <span className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-gold px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-primary-foreground shadow">
-                            Gold
+                        {c.isSpecial && (
+                          <span className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-accent px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-primary-foreground shadow">
+                            {c.tier}
                           </span>
                         )}
                         <PlayerCard
@@ -238,6 +258,11 @@ export default function PackShop({
                           ovr={c.ovr}
                           position={c.position}
                         />
+                        {c.isDuplicate && (
+                          <p className="mt-1 text-center text-[9px] text-muted">
+                            ซ้ำ +{c.shardsGained}
+                          </p>
+                        )}
                       </div>
                     );
                   })}
@@ -247,60 +272,7 @@ export default function PackShop({
                 onClick={close}
                 className="my-4 shrink-0 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground hover:bg-primary-strong"
               >
-                เริ่มจัดทีม
-              </button>
-            </div>
-          )}
-
-          {phase === "revealed" && reveal && !isStarter && (
-            <div className="flex flex-1 flex-col items-center justify-center px-6">
-              {(() => {
-                const card = reveal.cards[0];
-                return (
-                  <>
-                    <div
-                      className="card-reveal w-56 rounded-2xl"
-                      style={{
-                        filter: `drop-shadow(0 0 24px ${
-                          TIER_COLOR[card.tier as CardTier] ?? "#8b5cf6"
-                        })`,
-                      }}
-                    >
-                      <PlayerCard
-                        imageUrl={card.imageUrl}
-                        name={card.playerName}
-                        ovr={card.ovr}
-                        position={card.position}
-                      />
-                    </div>
-
-                    <div className="mt-4 text-center">
-                      <p className="text-lg font-bold">
-                        {card.playerName}{" "}
-                        <span style={{ color: TIER_COLOR[card.tier as CardTier] }}>
-                          {card.ovr} {card.position}
-                        </span>
-                      </p>
-                      <p className="text-xs text-muted">{card.club}</p>
-                      {reveal.isDuplicate ? (
-                        <p className="mt-2 rounded-lg bg-surface-2 px-3 py-1 text-sm text-accent">
-                          การ์ดซ้ำ → รับ {reveal.shardsGained} Shards
-                        </p>
-                      ) : (
-                        <p className="mt-2 rounded-lg bg-primary/20 px-3 py-1 text-sm text-primary">
-                          การ์ดใหม่!
-                        </p>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-
-              <button
-                onClick={close}
-                className="mt-6 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground hover:bg-primary-strong"
-              >
-                เยี่ยม
+                {reveal.isStarter ? "เริ่มจัดทีม" : "เยี่ยม"}
               </button>
             </div>
           )}

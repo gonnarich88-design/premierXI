@@ -135,7 +135,7 @@ async function LoggedInHome({
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted">
-              เปิดฟรีเพื่อรับการ์ดตั้งต้น 11 ใบ + 300 Silver + 1 Ticket → แตะที่นี่
+              เปิดฟรีเพื่อรับการ์ดตั้งต้น 11 ใบ + 300 Silver → แตะที่นี่
             </p>
           </Link>
         </>
@@ -146,6 +146,7 @@ async function LoggedInHome({
         canClaim={daily.canClaim}
         streak={daily.streak}
         nextReward={daily.nextReward}
+        totalLogins={daily.totalLogins}
       />
 
       {/* Quick actions */}

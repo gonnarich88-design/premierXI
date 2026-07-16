@@ -26,7 +26,7 @@
 
 ## ขั้น 2 — Auth & Onboarding
 - [x] ระบบสมัคร/เข้าสู่ระบบ (email + password, session cookie แบบ HMAC-signed)
-- [x] Starter Pack ฟรีครั้งแรก: เปิดเองในหน้าเปิดซอง → reveal การ์ด 11 ตำแหน่ง + Silver 300 + Ticket 1 (ไม่แจกเงียบ)
+- [x] Starter Pack ฟรีครั้งแรก: เปิดเองในหน้าเปิดซอง → reveal การ์ด 11 ตำแหน่ง + Silver 300 (ไม่แจกเงียบ) — เดิมแถม Ticket 1 ด้วย ตัดออกแล้วหลังยกเลิก Ticket Pack (ดู ขั้น 3.5)
 - [x] หน้า Profile: แสดงเงินทุกสกุล, level, EXP bar + ปุ่มออกจากระบบ
 - [x] Home แยกมุมมอง guest/logged-in + verify logic ผ่านสคริปต์ทดสอบ
 
@@ -38,12 +38,43 @@
 - [x] แทนที่ seed แต่งเองด้วยข้อมูลจริง + หน้า Collection แสดงการ์ด
 - [x] ปรับ Starter Pack ให้สุ่มสมดุลจากพูล Bronze/Silver จริง
 
-## ขั้น 3 — Phase 2: Pack Opening (Gacha)
-- [x] Pack config: Standard (Silver), Premium (Gold), Ticket pack + อัตราสุ่มต่อ tier
-- [x] ระบบ RNG แบบถ่วงน้ำหนัก + Pity System (การันตี Gold ทุก 10 ครั้งใน Premium)
-- [x] Duplicate → แลก Shard (Bronze 5 / Silver 15 / Gold 50)
+## ขั้น 3 — Phase 2: Pack Opening (Gacha) — เวอร์ชันแรก แทนที่ทั้งหมดโดย ขั้น 3.5 แล้ว
+- [x] ~~Pack config: Standard (Silver), Premium (Gold), Ticket pack + อัตราสุ่มต่อ tier~~ → ดู ขั้น 3.5
+- [x] ~~ระบบ RNG แบบถ่วงน้ำหนัก + Pity System (การันตี Gold ทุก 10 ครั้งใน Premium)~~ → ตัด pity ออกแล้ว (ไม่มี Premium pack แล้ว)
+- [x] Duplicate → แลก Shard (Bronze 5 / Silver 15 / Gold 50) — ยังใช้อยู่ ต่อยอดใน ขั้น 3.5
 - [x] หน้าเปิดซอง + animation (ซองสั่น + card reveal, glow ตาม tier)
 - [x] บันทึกผลลง UserCard + EXP/level up + verify end-to-end
+
+## ขั้น 3.5 — Pack Redesign: Standard / Evolution / Royal Prime
+เปลี่ยนจาก Standard/Premium/Ticket (เดิม) เป็น 3 pack ตาม rarity: Standard (≤90 OVR), Evolution (≤92 OVR, นักเตะตัวท็อปปัจจุบัน), Royal Prime (92+ OVR, ตำนาน) — ไม่รวม Starter Pack ที่แจกฟรีตอนแรก รูปการ์ดใหม่ถูกอัพขึ้น GitHub ตรงๆ (ไม่ผ่าน mycoder) แล้ว pull เข้ามา
+- [x] Import การ์ดพิเศษจากรูป Evolution 44 ใบ + Royal Prime 44 ใบ — vision extract OVR/ตำแหน่ง/สโมสร/ชาติ (8 subagent ขนานกัน คนละ 11 ใบ) → `data/extracted/evolution.json`, `data/extracted/royalprime.json` → import ด้วย `prisma/import-special-cards.ts` (`npm run db:import-special`) เข้า `category="evolution"` (tier **Hero**, OVR 90-92) และ `category="royalprime"` (tier **Legend**, OVR 92-98) รวม 88 การ์ด ไม่กระทบการ์ด normal เดิม
+  - รูปอยู่ที่ `public/card/evolution/`, `public/card/royalprime/` (ย้ายจาก root `card/Evolution/`, `card/Royal Prime/` หลัง pull)
+  - พบ 2 จุดที่แก้ให้ถูกต้องระหว่าง extract: Agüero/David Silva ธงชาติบนรูปการ์ดผิด (ขึ้น France/Netherlands) แก้เป็น Argentina/Spain จริงตามคนจริง, Welbeck club มี HTML entity `&amp;` แก้เป็น `&`
+- [x] Prisma: เพิ่ม `User.evoShards`, `User.primeShards` (แยก pool จาก `shards` เดิม) + migrate (`20260716084711_add_evo_prime_shards`)
+- [x] Pack ใหม่ 3 แบบ เปิดทีละ **5 ใบ/ครั้ง** (เดิมเปิดทีละ 1 ใบ) — `src/lib/packs.ts`:
+  - **Standard** (300 silver): สุ่มอิสระ 5 ใบจากพูล normal เดิม (Bronze 55% / Silver 38% / Gold 7%)
+  - **Evolution** (10 gold): การันตี 1 ใบจากพูล Evolution 44 ใบ (สุ่มเท่ากันทุกใบ 1/44) + 10% โอกาสโบนัสใบพิเศษที่ 2 + ที่เหลือสุ่ม normal เรตดีขึ้น (Bronze 10% / Silver 50% / Gold 40%)
+  - **Royal Prime** (20 gold): การันตี 1 ใบจากพูล Royal Prime 44 ใบ (1/44) + 12% โอกาสโบนัสใบที่ 2 + ที่เหลือสุ่ม normal เรตเดียวกับ Evolution
+  - ลบ Premium pack + Ticket pack เดิมออกจาก `PACKS` registry แล้ว (รวมถึง pity system ที่ผูกกับ Premium)
+- [x] `SHARD_VALUE` เพิ่ม tier ใหม่: Hero = 100, Legend = 250 (เดิม Bronze 5 / Silver 15 / Gold 50)
+- [x] Shard Exchange (`SHARD_EXCHANGE` ใน `packs.ts`, ฟังก์ชัน `openPackWithShards`) — แลก shard เป็นซองฟรี แยก pool ตามที่มา กันเอา shard ถูกไปซื้อของแพง:
+  - Normal shards 600 → Standard Pack ฟรี 1 ครั้ง
+  - Evolution shards 500 → Evolution Pack ฟรี 1 ครั้ง
+  - Royal Prime shards 1,000 → Royal Prime Pack ฟรี 1 ครั้ง
+- [x] Daily login (`src/lib/daily.ts`): silver = `100 + day*30` (+ bonus 300 วันที่ 7 แทน packTicket เดิม), เลิกแจก packTicket ทั้งจาก daily login และ Starter Pack (currency คงไว้ในระบบเผื่ออนาคต ไม่ลบออกจาก schema)
+- [x] อัพเดต `PackShop.tsx`: 3 ปุ่มซื้อ (Standard/Evolution/Royal Prime) + ปุ่มแลก shard แยกตาม pack + reveal grid รองรับ 5 ใบ/ครั้ง (ใช้ layout เดียวกับ Starter Pack 11 ใบ) + badge เด่นบนการ์ดพิเศษที่สุ่มได้
+- [ ] ยังไม่ทำ (scope ถัดไปถ้าต้องการ): pity/ตัวช่วยกันโชคร้ายสำหรับสล็อตการันตี (เช่น การ์ดซ้ำติดกัน N ครั้งค่อยบังคับใบใหม่), UI แสดง OVR range ต่อ pack ให้ผู้เล่นเห็นชัดเจนกว่านี้
+
+## ขั้น 3.6 — โปรโมชั่นเปิดตัวเกม (Launch Promotion)
+เป้าหมาย: ให้สาย F2P มีทางเข้าถึง Evolution/Royal Prime ได้เร็วขึ้น (เดิมต้องรอ 60-120 วันจาก Gold ที่หาได้) + hook คนเล่นต่อเนื่องช่วงเปิดตัว โดยไม่ทำลายความหายากของการ์ดพรีเมียมในระยะยาว
+- [x] Weekly Gold trickle: เพิ่ม `+2 Gold` ในวันที่ 7 ของทุกรอบ (จุดเดียวกับ silver bonus 610) นอกเหนือจาก `+5 Gold` ทุก 30 วันเดิม — F2P สะสมได้ 13 Gold ใน 30 วันแรก (พอเปิด Evolution ได้ 1 ครั้งใน 30 วัน แทนที่จะต้องรอ 60 วัน)
+- [x] Milestone แจกซองพิเศษฟรี **ครั้งเดียวตลอดไป** (ไม่วนซ้ำ ป้องกันการแจก Royal Prime ฟรีทุกเดือนซึ่งจะทำลายความหายาก) — นับจาก `User.totalLogins` (สะสมรวม ไม่ต้อง login ติดต่อกัน ต่างจาก `loginStreak` ที่ใช้คำนวณ silver/gold รายวัน):
+  - Login สะสมครบ 15 วัน → แจก Evolution Pack ฟรี 1 ครั้ง (`User.evoMilestoneClaimed`)
+  - Login สะสมครบ 30 วัน → แจก Royal Prime Pack ฟรี 1 ครั้ง (`User.primeMilestoneClaimed`)
+  - Implement: `LOGIN_MILESTONES` ใน `daily.ts` + `grantFreePack()` ที่เพิ่มใน `packs.ts` (เปิดซองแบบไม่หักเงิน ใช้ tx เดียวกับ `claimDaily` ให้ atomic) เรียกจาก `claimDaily()` อัตโนมัติ, แจ้งเตือนผ่าน `daily.ts` action, แสดงผลใน `DailyClaim.tsx` (ทั้ง preview "เหลืออีกกี่วัน" และผลตอนได้รับ)
+  - **หมายเหตุสำคัญ**: นี่คือ mechanic ถาวรที่ implement ไว้แล้ว ถ้าต้องการให้เป็น "โปรโมชั่นเปิดตัว" แบบมีวันหมดเขตจริงๆ (เช่น เฉพาะผู้สมัครก่อนวันที่กำหนด) ต้องเพิ่ม logic เช็ควันสมัคร (`User.createdAt`) เทียบกับ deadline ที่ยังไม่ได้ตกลงกัน — ปัจจุบันใช้ได้กับผู้เล่นทุกคนไม่มีกำหนดหมดอายุ
+- [x] First Deposit Bonus: เติมเงินจริงครั้งแรกได้ Gold โบนัส **+20%** (`User.hasDeposited` กันใช้ซ้ำ) — อยู่ใน `mockDeposit()` (`src/lib/economy.ts`) พร้อมใช้งานทันทีที่มีหน้า deposit จริง (ปัจจุบันยังไม่มี UI เติมเงิน เป็น backend logic รอต่อ — ดู ขั้น 9 Admin Panel)
+- [ ] ยังไม่ทำ: หน้า UI เติมเงินจริง (deposit page), ตั้ง deadline วันหมดเขตโปรโมชั่นถ้าต้องการจำกัดเฉพาะช่วง launch
 
 ## ขั้น 4 — Team Building
 - [x] เลือก Formation (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) พร้อมพิกัดบนสนาม
@@ -52,10 +83,14 @@
 - [x] บันทึกทีมของผู้เล่น (Squad/SquadSlot) + verify end-to-end
 
 ## ขั้น 5 — Phase 1: สะสมแต้ม
-- [x] Daily Login (streak + โบนัสวันที่ 7/30) — เช็คอินบนหน้า Home + verify
+- [x] Daily Login (streak + โบนัสวันที่ 7/30) — เช็คอินบนหน้า Home + verify — ตัวเลข reward ปรับเพิ่มอีกรอบใน ขั้น 3.5/3.6 (silver bonus วันที่ 7, gold trickle, milestone 15/30 วัน)
 - [ ] Daily Mission / Weekly Mission (track ความคืบหน้า + รับรางวัล)
 - [ ] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
 - [ ] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
+- [ ] Level milestone rewards — ตาม gdd.txt "3. EXP" (ทุก Level ได้ Silver + Pack + Cosmetic) ตอนนี้เลเวลอัพยังไม่ให้อะไรเลยนอกจาก notification
+  - แนวคิด: milestone table (เลเวลสูงขึ้น รางวัลดีขึ้น) แทนแจกเท่ากันทุกเลเวล — ยังไม่ได้ตกลงว่า lv ไหนได้อะไร (รอคุยรอบหน้า)
+  - Cosmetic ตาม GDD ยังไม่มีระบบรองรับในโค้ดเลย ต้องออกแบบ/สร้างใหม่ทั้งหมด (scope แยกจาก milestone reward) — ทำ Silver/Pack Ticket/Gold ก่อน ค่อยเพิ่ม Cosmetic ทีหลัง
+  - Formation unlock ตาม level ที่เคยเสนอไว้ **ตัดทิ้งแล้ว** — เช็ค gdd.txt แล้วไม่มีในดีไซน์ต้นฉบับ (Formation ใน GDD ผูกกับ PvP เท่านั้น)
 
 ## ขั้น 5.5 — Notification Center
 - [x] Schema: `Notification` (per-user) + `Announcement` (ข่าว broadcast) + `type` String ตาม constants + `User.lastReadNewsAt` + migrate
@@ -70,6 +105,9 @@
 - [ ] Matchmaking (จับคู่กับทีมผู้เล่นอื่น / bot)
 - [ ] เครื่องคำนวณผล: พลังทีม + Chemistry + Formation + random modifier
 - [ ] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold
+  - แนวคิดรางวัล (วิเคราะห์ไว้แล้ว รอตกลง): hybrid EXP+Silver — ชนะ 25exp/60silver (×0.5-1.5 ตาม opponent strength), แพ้ 8exp/15silver (เฉพาะโควตาฟรี 5 ครั้ง ไม่รวมแมตช์ที่ซื้อด้วย gold), win-streak bonus +5exp/ชนะติดกัน (เพดาน +15)
+  - เหตุผล: silver/แมตช์ต้องต่ำกว่าค่า gold ที่จ่ายซื้อ เพื่อกัน pay-to-farm loop (ซื้อแมตช์ด้วย gold คุ้มน้อยกว่าเอา gold ไปเปิด Evolution/Royal Prime Pack โดยตรง — อัพเดตชื่อ pack ตาม ขั้น 3.5 ที่ยกเลิก Premium Pack ไปแล้ว)
+  - implement ควรเรียกผ่าน `grantExp()` ใน `economy.ts` (ตอนนี้เป็น dead code ไม่มีใครเรียก) แทน copy logic level-up ซ้ำแบบใน `daily.ts`/`packs.ts`
 - [ ] Ranking 6 tier (Bronze→Legend) + season reset + reward
 
 ## ขั้น 7 — Phase 4: Fantasy Premier XI
@@ -85,7 +123,7 @@
 ## ขั้น 9 — Admin Panel
 - [ ] จัดการนักเตะ/การ์ด (เพิ่ม/แก้ค่าพลัง/อัปโหลดรูป)
 - [ ] กรอกผลบอล Fantasy
-- [ ] เติม Gold / จัดการผู้ใช้
+- [ ] เติม Gold / จัดการผู้ใช้ — backend logic (`mockDeposit()`, รวม First Deposit Bonus +20%) พร้อมแล้วจาก ขั้น 3.6 เหลือแค่สร้างหน้า UI เรียกใช้
 - [ ] ตั้งค่าอัตราสุ่ม pack + event
 
 ## ขั้น 10 — Polish & Verify

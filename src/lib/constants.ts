@@ -55,7 +55,14 @@ export const POSITION_GROUP: Record<Position, "GK" | "DEF" | "MID" | "ATT"> = {
 };
 
 /** สกุลเงินในเกม */
-export const CURRENCIES = ["silver", "gold", "packTicket", "shards"] as const;
+export const CURRENCIES = [
+  "silver",
+  "gold",
+  "packTicket",
+  "shards",
+  "evoShards",
+  "primeShards",
+] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
 /** สี hex ประจำ tier (ใช้ในการ์ด UI) */

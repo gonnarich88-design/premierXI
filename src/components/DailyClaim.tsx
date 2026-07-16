@@ -3,20 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { claimDailyAction } from "@/app/actions/daily";
-import type { DailyReward } from "@/lib/daily";
+import { LOGIN_MILESTONES, type DailyReward, type MilestoneReward } from "@/lib/daily";
+
+const MILESTONE_LABEL: Record<string, string> = {
+  evolution: "Evolution Pack",
+  royalprime: "Royal Prime Pack",
+};
+
+function nextMilestone(totalLogins: number) {
+  const upcoming = Object.entries(LOGIN_MILESTONES)
+    .filter(([, m]) => totalLogins < m.totalLogins)
+    .sort((a, b) => a[1].totalLogins - b[1].totalLogins);
+  const [key, m] = upcoming[0] ?? [];
+  return m ? { key: key!, ...m } : null;
+}
 
 export default function DailyClaim({
   canClaim,
   streak,
   nextReward,
+  totalLogins,
 }: {
   canClaim: boolean;
   streak: number;
   nextReward: DailyReward;
+  totalLogins: number;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [claimed, setClaimed] = useState<DailyReward | null>(null);
+  const [milestone, setMilestone] = useState<MilestoneReward | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function claim() {
@@ -26,6 +42,7 @@ export default function DailyClaim({
     const res = await claimDailyAction();
     if (res.ok) {
       setClaimed(res.reward);
+      setMilestone(res.milestone ?? null);
       router.refresh();
     } else {
       setError(res.error);
@@ -34,6 +51,7 @@ export default function DailyClaim({
   }
 
   const done = claimed !== null || !canClaim;
+  const upcoming = nextMilestone(totalLogins);
 
   return (
     <div className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4">
@@ -72,6 +90,17 @@ export default function DailyClaim({
           รับแล้ว! +{claimed.silver} Silver
           {claimed.packTicket ? ` · +${claimed.packTicket} Ticket` : ""}
           {claimed.gold ? ` · +${claimed.gold} Gold` : ""}
+        </p>
+      )}
+      {milestone && (
+        <p className="mt-2 rounded-lg bg-accent/20 px-3 py-2 text-sm text-accent">
+          🎁 login ครบเป้า! ได้ {MILESTONE_LABEL[milestone.packId]} ฟรี {milestone.cards.length} ใบ —
+          ไปดูที่คลังการ์ด
+        </p>
+      )}
+      {!done && upcoming && (
+        <p className="mt-2 text-[11px] text-muted">
+          login สะสมอีก {upcoming.totalLogins - totalLogins} วัน รับ {MILESTONE_LABEL[upcoming.key]} ฟรี
         </p>
       )}
       {error && (

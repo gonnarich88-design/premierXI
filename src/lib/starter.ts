@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { FORMATIONS, DEFAULT_FORMATION } from "@/lib/formations";
 
-// เงิน/ไอเทมแถมตอนเปิด Starter Pack ครั้งแรก (พอเปิด Standard Pack ลองเล่นได้)
+// เงินแถมตอนเปิด Starter Pack ครั้งแรก (พอเปิด Standard Pack ลองเล่นได้)
+// เดิมแถม Pack Ticket ด้วย แต่ยกเลิก Ticket Pack แล้ว เลยไม่แจกอีก
 const STARTER_SILVER = 300;
-const STARTER_TICKET = 1;
 
 // ตำแหน่งที่ต้องการเป๊ะๆ 11 ใบ ตาม formation เริ่มต้น (เช่น 4-3-3: GK,LB,CB,CB,RB,CM,CM,CM,LW,ST,RW)
 // การันตีว่าผู้เล่นใหม่จัดทีมเต็ม 11 ตำแหน่งได้ทันทีแบบ fit เป๊ะ (chemistry เต็ม) ไม่ต้องรอเปิดซองเพิ่ม
@@ -139,7 +139,6 @@ export async function openStarterPack(
       data: {
         starterClaimed: true,
         silver: { increment: STARTER_SILVER },
-        packTicket: { increment: STARTER_TICKET },
       },
     });
 

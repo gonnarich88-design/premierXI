@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { PACKS } from "@/lib/packs";
+import { PACKS, SHARD_EXCHANGE } from "@/lib/packs";
 import PackShop from "@/components/PackShop";
 
 export default async function PackPage() {
@@ -13,20 +13,29 @@ export default async function PackPage() {
     currency: p.currency,
     cost: p.cost,
     desc: p.desc,
-    rates: p.rates,
-    pityThreshold: p.pityThreshold ?? null,
+    fillerRates: p.fillerRates,
+    special: p.special ?? null,
+  }));
+
+  const shardExchanges = Object.entries(SHARD_EXCHANGE).map(([id, e]) => ({
+    id,
+    packId: e.packId,
+    field: e.field,
+    cost: e.cost,
   }));
 
   return (
     <PackShop
       packs={packs}
+      shardExchanges={shardExchanges}
       wallet={{
         silver: user.silver,
         gold: user.gold,
         packTicket: user.packTicket,
         shards: user.shards,
+        evoShards: user.evoShards,
+        primeShards: user.primeShards,
       }}
-      pity={user.pityCounter}
       starterClaimed={user.starterClaimed}
     />
   );

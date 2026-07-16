@@ -80,11 +80,29 @@ export async function grantExp(userId: string, amount: number) {
   });
 }
 
-/** mock deposit: แปลงเงินบาทเป็น Gold ตามอัตราที่กำหนด */
+/** โบนัส Gold ตอนเติมเงินจริงครั้งแรก (โปรโมชั่นเปิดตัวเกม) */
+const FIRST_DEPOSIT_BONUS_RATE = 0.2;
+
+/** mock deposit: แปลงเงินบาทเป็น Gold ตามอัตราที่กำหนด + โบนัส 20% ถ้าเป็นการเติมครั้งแรก */
 export async function mockDeposit(userId: string, baht: number) {
   if (baht <= 0) throw new Error("จำนวนเงินต้องมากกว่า 0");
-  const gold = Math.floor(baht * DEPOSIT_RATE_GOLD_PER_BAHT);
-  if (gold <= 0) throw new Error("จำนวนเงินน้อยเกินไป");
-  await addCurrency(userId, "gold", gold);
-  return { baht, gold };
+  const baseGold = Math.floor(baht * DEPOSIT_RATE_GOLD_PER_BAHT);
+  if (baseGold <= 0) throw new Error("จำนวนเงินน้อยเกินไป");
+
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { hasDeposited: true },
+    });
+    const isFirstDeposit = !user.hasDeposited;
+    const bonusGold = isFirstDeposit ? Math.floor(baseGold * FIRST_DEPOSIT_BONUS_RATE) : 0;
+    const gold = baseGold + bonusGold;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { gold: { increment: gold }, hasDeposited: true },
+    });
+
+    return { baht, gold: baseGold, bonusGold, totalGold: gold, isFirstDeposit };
+  });
 }

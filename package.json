@@ -9,6 +9,7 @@
     "start": "next start -H 0.0.0.0",
     "lint": "eslint",
     "db:import": "tsx prisma/import-cards.ts",
+    "db:import-special": "tsx prisma/import-special-cards.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "prisma": {

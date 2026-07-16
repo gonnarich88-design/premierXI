@@ -93,6 +93,8 @@ export async function getCurrentUser() {
       gold: true,
       packTicket: true,
       shards: true,
+      evoShards: true,
+      primeShards: true,
       pityCounter: true,
       starterClaimed: true,
     },
