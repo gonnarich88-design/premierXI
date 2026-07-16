@@ -80,7 +80,7 @@
 - [x] เลือก Formation (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) พร้อมพิกัดบนสนาม
 - [x] วางนักเตะ 11 คนตามตำแหน่ง (แตะช่อง → เลือกการ์ด, กันใช้ซ้ำ)
 - [x] คำนวณ Chemistry (สโมสร/ลีก/ชาติ + ตรงตำแหน่ง) + team rating — เพิ่ม OVR Penalty ตามตำแหน่ง 2026-07-16 (กลุ่มเดียวกัน -10, คนละกลุ่ม -25) กันกลยุทธ์ยัดการ์ด OVR สูงสุดไม่สนตำแหน่ง ดู `docs/game-guide.md` หัวข้อ 10 + 13.2
-- [~] Chemistry: แก้ avgOvr ให้หารด้วย 11 คงที่ (ปิดช่องโหว่ทีมไม่ครบยัง rating สูง) + เพิ่ม Full Unity bonus (ครบ 11 คนสโมสรเดียวกัน+ตำแหน่ง exact ทุกคน → rating +2 experimental + เส้นเขียว/badge บนสนาม) — ดีไซน์ผ่านการรีวิวจาก Sonnet + Codex แล้ว สเปคที่ `docs/superpowers/specs/2026-07-16-chemistry-full-team-design.md`
+- [x] Chemistry: แก้ avgOvr ให้หารด้วย 11 คงที่ (ปิดช่องโหว่ทีมไม่ครบยัง rating สูง) + เพิ่ม Full Unity bonus (ครบ 11 คนสโมสรเดียวกัน+ตำแหน่ง exact ทุกคน → rating +2 experimental + เส้นเขียว/badge บนสนาม) — logic verify ผ่านสคริปต์ (8 scenario), `npx tsc --noEmit` และ `npm run build` ผ่านหมด สเปคที่ `docs/superpowers/specs/2026-07-16-chemistry-full-team-design.md` — **รอ user เช็ค visual บน Preview** (badge/ring แสดงถูกต้อง ไม่บังการแตะช่อง มือถือไม่ล้น) เพราะ Preview server ไม่ได้รันอยู่ตอนอิมพลีเมนต์
 - [x] บันทึกทีมของผู้เล่น (Squad/SquadSlot) + verify end-to-end
 
 ## ขั้น 5 — Phase 1: สะสมแต้ม
