@@ -85,7 +85,7 @@
 
 ## ขั้น 5 — Phase 1: สะสมแต้ม
 - [x] Daily Login (streak + โบนัสวันที่ 7/30) — เช็คอินบนหน้า Home + verify — ตัวเลข reward ปรับเพิ่มอีกรอบใน ขั้น 3.5/3.6 (silver bonus วันที่ 7, gold trickle, milestone 15/30 วัน)
-- [ ] Daily Mission / Weekly Mission (track ความคืบหน้า + รับรางวัล)
+- [x] Daily Mission / Weekly Mission (track ความคืบหน้า + รับรางวัล) — 3 daily (login/เปิดซอง/จัดทีม) + 2 weekly (login 5 วัน/เปิดซองครบ 10) ผูกกับ action จริงที่มีอยู่แล้ว (ยังไม่ผูก PvP/Fantasy เพราะยังไม่สร้าง), manual claim (ปุ่มกดเอง), ไม่มี Gold/Pack Ticket จาก mission เลย, `MissionProgress` เป็นตารางเดียว generic + catalog เป็นโค้ด (`src/lib/missionConfig.ts`) กันเพิ่มมิชชั่นใหม่ต้อง migrate — ดีไซน์เต็มรีวิวโดย Codex แล้วที่ `docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md`
 - [ ] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
 - [ ] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
 - [x] Level milestone rewards — **แก้แล้ว 2026-07-16** ตาม gdd.txt "3. EXP" (ทุก Level ได้ Silver + Pack, Cosmetic ข้ามไปก่อนเพราะยังไม่มีระบบรองรับ):
@@ -137,6 +137,7 @@
   - [ ] **Medium:** หักเงินแบบอ่านก่อนค่อย decrement ไม่มีเงื่อนไขระดับ DB — ปลอดภัยบน SQLite ตอนนี้ แต่ถ้าย้าย DB ในอนาคตต้องเปลี่ยนเป็น atomic conditional update ก่อน
   - [x] **Chemistry — แก้แล้ว 2026-07-16:** league link (`LINK_WEIGHT.league` = 0.5) เคยทำให้ทุกทีมได้ teamChem floor 22/33 (67%) อัตโนมัติเพราะการ์ดทุกใบเป็น Premier League หมด (100% แมตช์เสมอ) พิสูจน์ด้วยจำลองทีมที่ไม่มี synergy จริงเลยก็ยังได้ 22/33 — ตัดสินใจ (ยืนยันกับทีมแล้ว: เกมนี้จะมีแต่ Premier League ลีกเดียวตลอดไป ไม่มีแผนเพิ่มลีกอื่น) **ตัด league ออกจากสูตรทั้งหมด** (`LINK_WEIGHT`, `ChemEntry.league`, `team/page.tsx`) เหลือแค่ club (+2) กับ nation (+1) ผลหลังแก้: worst-case (ไม่มี synergy) = 0/33, best-case (คลับ+ชาติเดียวกันหมด) = 33/33, ทีมผสมทั่วไป (จับคู่คลับบางส่วน) ~14/33 — ได้ range เต็ม 0-33 ที่มีความหมายกับการจัดทีมจริงแล้ว. `MAX_CHEM_RATING_BONUS` (0.10) **ตัดสินใจคงค่าเดิมไว้ก่อน** เพราะที่ avgOVR 80: worst=80, best=+8 (88), ทีมผสมทั่วไป=+3 (83) ถือว่าเป็น spread ที่มีน้ำหนักสมเหตุสมผลแล้วหลังแก้ floor bug (เดิมที่ "รู้สึกต่ำ" เป็นเพราะ floor bug บีบ range ให้แคบ ไม่ใช่เพราะ cap ต่ำจริง) — รอ feedback จากการเล่นจริงถ้าต้องปรับอีกทีหลัง
   - [ ] Royal Prime/Evolution pool ไม่มีการ์ดตำแหน่ง LB เลย (Royal Prime ไม่มี RB ด้วย) — ต้องมี asset รูปการ์ดใหม่ก่อนถึงจะเพิ่มได้ เป็นงาน content แยกต่างหาก
+  - [ ] Pruning ข้อมูลเก่าของ `MissionProgress` — โตแบบ unbounded ตามจำนวนผู้เล่น×เวลา (1 แถว/มิชชั่น/รอบ/ผู้เล่น) ต้องมี cron/admin action ลบ periodKey ที่พ้นรอบไปแล้วเกิน ~4 สัปดาห์ (เคลมไม่ได้อีกต่อไปตามกติกา "หายเงียบๆ") — ดู `docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md` หัวข้อ "งานที่เลื่อนไปอนาคต"
 - [ ] Responsive ครบทุกหน้า (มือถือเป็นหลัก)
 - [ ] เตรียมความเข้ากันได้กับ Telegram Mini App
 - [ ] ทดสอบ core loop end-to-end
