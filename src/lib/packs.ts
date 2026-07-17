@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { InsufficientFundsError, applyExp, levelReward } from "@/lib/economy";
 import type { Currency } from "@/lib/constants";
+import { bumpMission } from "@/lib/missions";
+import { MISSION_KEYS } from "@/lib/missionConfig";
 
 export type PackTier = "Bronze" | "Silver" | "Gold";
 
@@ -260,7 +262,10 @@ export async function openPack(userId: string, packId: string): Promise<OpenResu
     });
 
     const picks = await resolvePackCards(tx, config);
-    return finalizeOpen(tx, userId, picks);
+    const result = await finalizeOpen(tx, userId, picks);
+    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, new Date());
+    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, new Date());
+    return result;
   });
 }
 
@@ -300,6 +305,9 @@ export async function openPackWithShards(userId: string, exchangeId: string): Pr
     });
 
     const picks = await resolvePackCards(tx, config);
-    return finalizeOpen(tx, userId, picks);
+    const result = await finalizeOpen(tx, userId, picks);
+    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, new Date());
+    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, new Date());
+    return result;
   });
 }
