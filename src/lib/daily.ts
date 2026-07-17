@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { grantFreePack, type OpenedCard, type LevelUpReward } from "@/lib/packs";
 import { applyExp, levelReward } from "@/lib/economy";
 
-// index วันแบบ UTC (จำนวนวันนับจาก epoch) ใช้เทียบว่าวันเดียวกัน/วันต่อกันไหม
-function dayIndex(d: Date): number {
+// index วันแบบ UTC (จำนวนวันนับจาก epoch) ใช้เทียบว่าวันเดียวกัน/วันต่อกันไหม — export ให้ missionPeriod.ts ใช้ boundary เดียวกัน
+export function dayIndex(d: Date): number {
   return Math.floor(d.getTime() / 86_400_000);
 }
 
