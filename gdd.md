@@ -125,7 +125,9 @@ Catalog เป็น single source of truth ที่ `src/lib/missionConfig.ts`
 **Pack ที่ถูกตัดออกจาก v1.0:** Premium Pack, Ticket Pack, และ Pity System ที่ผูกกับ Premium (การันตี Icon ทุก N ครั้ง) — ไม่มีอีกต่อไป
 
 ### ค่าพลังของนักเตะ ✅
-ทุกใบมี OVR, PACE, SHOOT, PASS, DRIBBLE, DEFENCE, PHYSICAL พร้อมตำแหน่งจริงตามที่ปรากฏบนการ์ด (15 ตำแหน่ง รวม GK/แนวรับ/กลาง/หน้า) — **OVR, ตำแหน่ง, สัญชาติ และ metadata** (altPositions/foot/skillMoves ฯลฯ) อ่านจากรูปการ์ดจริงด้วย vision extraction ส่วน**ค่าพลัง 6 ตัว derive แบบ deterministic** จาก OVR + กลุ่มตำแหน่ง (`generateStats()` ใน `src/lib/cardgen.ts` — ไม่ใช่ค่าสุ่ม แต่ก็ไม่ใช่ค่าที่อ่านจากรูปโดยตรง)
+ทุกใบมี OVR, PACE, SHOOT, PASS, DRIBBLE, DEFENCE, PHYSICAL พร้อมตำแหน่ง (15 ตำแหน่ง รวม GK/แนวรับ/กลาง/หน้า) แต่**ไม่ใช่ทุกค่าที่มาจากรูปการ์ดจริง**:
+- **ปรากฏบนหน้าการ์ดจริงและอ่านด้วย vision extraction**: OVR, ตำแหน่ง, สัญชาติ, สโมสร/ลีก, เท้าถนัด, Skill Move, Weak Foot
+- **ไม่ปรากฏบนหน้าการ์ดเลย** (ดีไซน์การ์ดที่ใช้ไม่มี stat breakdown อยู่แต่แรก มีแค่ OVR รวมเบอร์เดียว): ค่าพลัง 6 ตัว (PACE/SHOOT/PASS/DRIBBLE/DEFENCE/PHYSICAL) — เกมจึง **synthesize ขึ้นเองแบบ deterministic** จาก OVR + กลุ่มตำแหน่งผ่าน `generateStats()` ใน `src/lib/cardgen.ts` (นักเตะกลุ่มตำแหน่งเดียวกัน + OVR เท่ากัน จะได้ค่าพลัง 6 ตัวเหมือนกันเป๊ะ ไม่มีความต่างรายบุคคล)
 
 ### Chemistry ✅ — ปรับสูตรจาก v1.0
 ดีไซน์ต้นฉบับระบุ "สโมสรเดียวกัน / ลีกเดียวกัน / สัญชาติเดียวกัน" แต่หลังพบว่าเกมมีแค่ Premier League ลีกเดียว **ลิงก์แบบลีกจึงแมตช์ 100% เสมอ** กลายเป็น floor ปลอมที่การันตีคะแนนสูงโดยไม่ต้องจัดทีมดี (ยืนยันด้วยการทดสอบจริง — ดู `docs/game-guide.md` หัวข้อ 13.1) จึง **ตัด league ออกจากสูตร** เหลือ:

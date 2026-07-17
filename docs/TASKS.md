@@ -105,7 +105,7 @@
 - [x] Wire triggers: รับรางวัลรายวัน · เปิดซอง (normal + starter) · level up (ตัด PvP — ยังไม่ทำจริง)
 - [x] Verify: prisma migrate + tsc + lint + build + smoke test data layer (unread 3→0)
 
-## ขั้น 6 — Phase 3: PvP
+## ขั้น 6 — Phase 3: PvP [~]
 - [ ] Matchmaking (จับคู่กับทีมผู้เล่นอื่น / bot)
 - [ ] เครื่องคำนวณผล: พลังทีม + Chemistry + Formation + random modifier
 - [ ] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold
