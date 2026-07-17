@@ -31,6 +31,10 @@ export async function bumpMission(
 /**
  * bump DAILY_LOGIN เสมอ + WEEKLY_LOGIN_5 เฉพาะครั้งแรกของวันนี้ (กันนับซ้ำถ้ามีหลาย login/วัน)
  * ต้องเรียกใน tx เดียวกับ claimDaily() เท่านั้น — ดูเหตุผลใน docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md หัวข้อ 3
+ *
+ * "ครั้งแรกของวันนี้" ตัดสินจากผล create() ของ DAILY_LOGIN row เอง (unique constraint กันชน)
+ * แทนที่จะ findUnique แล้วค่อยตัดสินใจ — เพราะแบบเดิมมี race window ถ้า isolation level ไม่ serialize
+ * write ให้ (SQLite ปัจจุบันปลอดภัยเพราะ single-writer แต่ถ้าย้าย DB ในอนาคตจะพังได้)
  */
 export async function bumpLoginMissions(
   tx: Prisma.TransactionClient,
@@ -38,18 +42,31 @@ export async function bumpLoginMissions(
   now: Date,
 ): Promise<void> {
   const dailyKey = dailyPeriodKey(now);
-  const existing = await tx.missionProgress.findUnique({
-    where: {
-      userId_missionKey_periodKey: {
-        userId,
-        missionKey: MISSION_KEYS.DAILY_LOGIN,
-        periodKey: dailyKey,
-      },
-    },
-  });
-  const isFirstToday = !existing;
 
-  await bumpMission(tx, userId, MISSION_KEYS.DAILY_LOGIN, now);
+  let isFirstToday: boolean;
+  try {
+    await tx.missionProgress.create({
+      data: { userId, missionKey: MISSION_KEYS.DAILY_LOGIN, periodKey: dailyKey, progress: 1 },
+    });
+    isFirstToday = true;
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      isFirstToday = false;
+      await tx.missionProgress.update({
+        where: {
+          userId_missionKey_periodKey: {
+            userId,
+            missionKey: MISSION_KEYS.DAILY_LOGIN,
+            periodKey: dailyKey,
+          },
+        },
+        data: { progress: { increment: 1 } },
+      });
+    } else {
+      throw err;
+    }
+  }
+
   if (isFirstToday) {
     await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_LOGIN_5, now);
   }

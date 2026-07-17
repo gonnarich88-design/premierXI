@@ -82,7 +82,7 @@ export type ClaimResult =
     }
   | { ok: false; error: string };
 
-export async function claimDaily(userId: string): Promise<ClaimResult> {
+export async function claimDaily(userId: string, now: Date = new Date()): Promise<ClaimResult> {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUniqueOrThrow({
       where: { id: userId },
@@ -97,7 +97,6 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
       },
     });
 
-    const now = new Date();
     const today = dayIndex(now);
     const last = user.lastClaimDate ? dayIndex(user.lastClaimDate) : null;
 

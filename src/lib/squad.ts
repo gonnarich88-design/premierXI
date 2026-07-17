@@ -40,6 +40,7 @@ export async function assignSlot(
   userId: string,
   index: number,
   cardId: string | null,
+  now: Date = new Date(),
 ) {
   if (index < 0 || index > 10) throw new Error("ช่องไม่ถูกต้อง");
 
@@ -64,6 +65,6 @@ export async function assignSlot(
       data: { cardId },
     });
 
-    await bumpMission(tx, userId, MISSION_KEYS.DAILY_ASSIGN_TEAM, new Date());
+    await bumpMission(tx, userId, MISSION_KEYS.DAILY_ASSIGN_TEAM, now);
   });
 }

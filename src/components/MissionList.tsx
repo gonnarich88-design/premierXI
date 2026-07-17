@@ -33,7 +33,15 @@ function MissionRow({ mission }: { mission: MissionStatus }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [claimed, setClaimed] = useState(mission.claimed);
+  const [prevPropClaimed, setPrevPropClaimed] = useState(mission.claimed);
   const [error, setError] = useState<string | null>(null);
+
+  // sync กับ prop เสมอ กัน state ค้างข้าม period (เช่น เปิดหน้าทิ้งไว้ข้ามวัน/สัปดาห์แล้ว refresh)
+  // ปรับระหว่าง render ตามแพทเทิร์นที่ React แนะนำ แทน useEffect เพื่อไม่ให้เกิด render ซ้อน
+  if (mission.claimed !== prevPropClaimed) {
+    setPrevPropClaimed(mission.claimed);
+    setClaimed(mission.claimed);
+  }
 
   const ready = mission.progress >= mission.target;
 

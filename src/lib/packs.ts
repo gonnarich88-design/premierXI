@@ -244,7 +244,11 @@ async function finalizeOpen(
 }
 
 /** เปิดซองด้วยเงินสกุลของซองนั้น (silver/gold) */
-export async function openPack(userId: string, packId: string): Promise<OpenResult> {
+export async function openPack(
+  userId: string,
+  packId: string,
+  now: Date = new Date(),
+): Promise<OpenResult> {
   const config = PACKS[packId];
   if (!config) throw new Error("ไม่พบซองนี้");
 
@@ -263,8 +267,8 @@ export async function openPack(userId: string, packId: string): Promise<OpenResu
 
     const picks = await resolvePackCards(tx, config);
     const result = await finalizeOpen(tx, userId, picks);
-    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, new Date());
-    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, new Date());
+    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, now);
+    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, now);
     return result;
   });
 }
@@ -285,7 +289,11 @@ export async function grantFreePack(
 }
 
 /** แลก Shard ที่สะสมจากการ์ดซ้ำ เป็นการเปิดซองฟรี 1 ครั้ง (แยก pool ตาม exchangeId) */
-export async function openPackWithShards(userId: string, exchangeId: string): Promise<OpenResult> {
+export async function openPackWithShards(
+  userId: string,
+  exchangeId: string,
+  now: Date = new Date(),
+): Promise<OpenResult> {
   const exchange = SHARD_EXCHANGE[exchangeId];
   if (!exchange) throw new Error("ไม่พบรายการแลกนี้");
   const config = PACKS[exchange.packId];
@@ -306,8 +314,8 @@ export async function openPackWithShards(userId: string, exchangeId: string): Pr
 
     const picks = await resolvePackCards(tx, config);
     const result = await finalizeOpen(tx, userId, picks);
-    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, new Date());
-    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, new Date());
+    await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, now);
+    await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, now);
     return result;
   });
 }
