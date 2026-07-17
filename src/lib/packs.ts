@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { InsufficientFundsError } from "@/lib/economy";
+import { InsufficientFundsError, applyExp, levelReward } from "@/lib/economy";
 import type { Currency } from "@/lib/constants";
 
 export type PackTier = "Bronze" | "Silver" | "Gold";
@@ -31,7 +31,7 @@ export const PACKS: Record<string, PackConfig> = {
     currency: "silver",
     cost: 300,
     desc: `เปิดที ${CARDS_PER_OPEN} ใบ จากนักเตะพรีเมียร์ลีก (OVR ไม่เกิน 90)`,
-    fillerRates: { Bronze: 0.55, Silver: 0.38, Gold: 0.07 },
+    fillerRates: { Bronze: 0.25, Silver: 0.5, Gold: 0.25 },
   },
   evolution: {
     id: "evolution",
@@ -58,7 +58,7 @@ export const SHARD_EXCHANGE: Record<
   string,
   { packId: string; field: "shards" | "evoShards" | "primeShards"; cost: number }
 > = {
-  standard: { packId: "standard", field: "shards", cost: 600 },
+  standard: { packId: "standard", field: "shards", cost: 500 },
   evolution: { packId: "evolution", field: "evoShards", cost: 500 },
   royalprime: { packId: "royalprime", field: "primeShards", cost: 1000 },
 };
@@ -145,10 +145,19 @@ export type OpenedCard = {
   isSpecial: boolean;
 };
 
+/** รางวัล level-up ต่อเลเวลที่ข้ามผ่าน (silver/gold เสมอ, pack เฉพาะเลเวลที่ถึง milestone) */
+export type LevelUpReward = {
+  level: number;
+  silver: number;
+  gold: number;
+  pack?: { packId: string; cards: OpenedCard[] };
+};
+
 export type OpenResult = {
   cards: OpenedCard[];
   leveledUp: boolean;
   level: number;
+  levelRewards: LevelUpReward[];
 };
 
 async function finalizeOpen(
@@ -195,12 +204,10 @@ async function finalizeOpen(
     });
   }
 
-  let level = user.level;
-  let exp = user.exp + EXP_PER_OPEN;
-  while (exp >= level * 100) {
-    exp -= level * 100;
-    level += 1;
-  }
+  const { level, exp, levelsGained } = applyExp(user.level, user.exp, EXP_PER_OPEN);
+  const rewardsByLevel = levelsGained.map((lv) => ({ lv, reward: levelReward(lv) }));
+  const silverBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.silver, 0);
+  const goldBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.gold, 0);
 
   await tx.user.update({
     where: { id: userId },
@@ -208,12 +215,30 @@ async function finalizeOpen(
       shards: { increment: shardDelta.shards },
       evoShards: { increment: shardDelta.evoShards },
       primeShards: { increment: shardDelta.primeShards },
+      silver: { increment: silverBonus },
+      gold: { increment: goldBonus },
       level,
       exp,
     },
   });
 
-  return { cards: opened, leveledUp: level > user.level, level };
+  // แจกซองฟรีของ milestone เลเวล (ถ้ามี) — ทำหลัง update state ปัจจุบันเสร็จ เพื่อให้ finalizeOpen
+  // ที่ถูกเรียกซ้อนจาก grantFreePack อ่านค่า level/exp ล่าสุดถูกต้อง (sequential ภายใน tx เดียวกัน)
+  const levelRewards: LevelUpReward[] = [];
+  let finalLevel = level;
+  for (const { lv, reward } of rewardsByLevel) {
+    const entry: LevelUpReward = { level: lv, silver: reward.silver, gold: reward.gold };
+    if (reward.freePackId) {
+      const bonus = await grantFreePack(tx, userId, reward.freePackId);
+      entry.pack = { packId: reward.freePackId, cards: bonus.cards };
+      levelRewards.push(entry, ...bonus.levelRewards);
+      finalLevel = bonus.level; // เผื่อซองโบนัสให้ EXP พอดีข้ามอีกเลเวล ต้องเอา level ล่าสุดจริง ๆ
+    } else {
+      levelRewards.push(entry);
+    }
+  }
+
+  return { cards: opened, leveledUp: finalLevel > user.level, level: finalLevel, levelRewards };
 }
 
 /** เปิดซองด้วยเงินสกุลของซองนั้น (silver/gold) */

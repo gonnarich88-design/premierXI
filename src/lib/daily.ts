@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { grantFreePack, type OpenedCard } from "@/lib/packs";
+import { grantFreePack, type OpenedCard, type LevelUpReward } from "@/lib/packs";
+import { applyExp, levelReward } from "@/lib/economy";
 
 // index วันแบบ UTC (จำนวนวันนับจาก epoch) ใช้เทียบว่าวันเดียวกัน/วันต่อกันไหม
 function dayIndex(d: Date): number {
@@ -31,7 +32,7 @@ export function rewardForStreak(streak: number): DailyReward {
     silver: 100 + day * 30 + (day === 7 ? 300 : 0),
     exp: 30,
     packTicket: 0,
-    gold: (day === 7 ? 2 : 0) + (streak % 30 === 0 ? 5 : 0),
+    gold: (day === 7 ? 5 : 0) + (streak % 30 === 0 ? 5 : 0),
   };
 }
 
@@ -76,6 +77,7 @@ export type ClaimResult =
       leveledUp: boolean;
       level: number;
       milestone?: MilestoneReward;
+      levelRewards: LevelUpReward[];
     }
   | { ok: false; error: string };
 
@@ -104,20 +106,18 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
     const reward = rewardForStreak(streak);
     const totalLogins = user.totalLogins + 1;
 
-    // exp + level up
-    let level = user.level;
-    let exp = user.exp + reward.exp;
-    while (exp >= level * 100) {
-      exp -= level * 100;
-      level += 1;
-    }
+    // exp + level up (+ รางวัล level milestone ตาม economy.ts:levelReward — ดู docs/game-guide.md หัวข้อ 2)
+    const { level, exp, levelsGained } = applyExp(user.level, user.exp, reward.exp);
+    const rewardsByLevel = levelsGained.map((lv) => ({ lv, reward: levelReward(lv) }));
+    const levelSilverBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.silver, 0);
+    const levelGoldBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.gold, 0);
 
     await tx.user.update({
       where: { id: userId },
       data: {
-        silver: { increment: reward.silver },
+        silver: { increment: reward.silver + levelSilverBonus },
         packTicket: { increment: reward.packTicket },
-        gold: { increment: reward.gold },
+        gold: { increment: reward.gold + levelGoldBonus },
         loginStreak: streak,
         lastClaimDate: now,
         totalLogins,
@@ -125,6 +125,22 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
         exp,
       },
     });
+
+    // แจกซองฟรีของ milestone เลเวล (ถ้ามี) — หลัง update state ปัจจุบันเสร็จ เพื่อให้ finalizeOpen
+    // ที่ถูกเรียกซ้อนอ่านค่า level/exp ล่าสุดถูกต้อง (sequential ภายใน tx เดียวกัน)
+    const levelRewards: LevelUpReward[] = [];
+    let finalLevel = level;
+    for (const { lv, reward: lr } of rewardsByLevel) {
+      const entry: LevelUpReward = { level: lv, silver: lr.silver, gold: lr.gold };
+      if (lr.freePackId) {
+        const bonus = await grantFreePack(tx, userId, lr.freePackId);
+        entry.pack = { packId: lr.freePackId, cards: bonus.cards };
+        levelRewards.push(entry, ...bonus.levelRewards);
+        finalLevel = bonus.level; // เผื่อซองโบนัสให้ EXP พอดีข้ามอีกเลเวล ต้องเอา level ล่าสุดจริง ๆ
+      } else {
+        levelRewards.push(entry);
+      }
+    }
 
     // launch promotion: login สะสมครบ 15/30 วัน (ครั้งเดียวตลอดไป ไม่วนซ้ำ)
     let milestone: MilestoneReward | undefined;
@@ -134,10 +150,20 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
         const result = await grantFreePack(tx, userId, m.packId);
         await tx.user.update({ where: { id: userId }, data: { [m.field]: true } });
         milestone = { packId: m.packId, cards: result.cards };
+        levelRewards.push(...result.levelRewards);
+        finalLevel = Math.max(finalLevel, result.level);
         break; // totalLogins เพิ่มทีละ 1 ต่อครั้ง เลยชนได้ milestone เดียวต่อการ claim
       }
     }
 
-    return { ok: true, reward, streak, leveledUp: level > user.level, level, milestone };
+    return {
+      ok: true,
+      reward,
+      streak,
+      leveledUp: finalLevel > user.level,
+      level: finalLevel,
+      milestone,
+      levelRewards,
+    };
   });
 }

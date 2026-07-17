@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionUserId } from "@/lib/auth";
 import { claimDaily, type ClaimResult } from "@/lib/daily";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, notifyLevelRewards } from "@/lib/notifications";
 
 export async function claimDailyAction(): Promise<ClaimResult> {
   const userId = await getSessionUserId();
@@ -24,12 +24,7 @@ export async function claimDailyAction(): Promise<ClaimResult> {
       href: "/",
     });
     if (result.leveledUp) {
-      await createNotification({
-        userId,
-        type: "LEVEL_UP",
-        title: `เลเวลอัพเป็น Lv.${result.level}!`,
-        href: "/profile",
-      });
+      await notifyLevelRewards(userId, result.level, result.levelRewards);
     }
     if (result.milestone) {
       const packName = result.milestone.packId === "evolution" ? "Evolution Pack" : "Royal Prime Pack";

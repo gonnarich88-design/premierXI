@@ -3,7 +3,7 @@
 import { getSessionUserId } from "@/lib/auth";
 import { openPack, openPackWithShards, type OpenResult } from "@/lib/packs";
 import { InsufficientFundsError } from "@/lib/economy";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, notifyLevelRewards } from "@/lib/notifications";
 
 export type OpenPackResponse =
   | { ok: true; result: OpenResult }
@@ -25,12 +25,7 @@ async function notifyResult(userId: string, result: OpenResult) {
     href: "/collection",
   });
   if (result.leveledUp) {
-    await createNotification({
-      userId,
-      type: "LEVEL_UP",
-      title: `เลเวลอัพเป็น Lv.${result.level}!`,
-      href: "/profile",
-    });
+    await notifyLevelRewards(userId, result.level, result.levelRewards);
   }
 }
 

@@ -58,26 +58,39 @@ export async function spendCurrency(
   return tx ? run(tx) : prisma.$transaction(run);
 }
 
-/** ให้ EXP แล้วเลื่อน level อัตโนมัติ (ต้องใช้ EXP = level * 100 ต่อเลเวล) */
-export async function grantExp(userId: string, amount: number) {
-  if (amount <= 0) throw new Error("amount ต้องมากกว่า 0");
-  return prisma.$transaction(async (db) => {
-    const user = await db.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { level: true, exp: true },
-    });
-    let { level, exp } = user;
-    exp += amount;
-    while (exp >= level * 100) {
-      exp -= level * 100;
-      level += 1;
-    }
-    return db.user.update({
-      where: { id: userId },
-      data: { level, exp },
-      select: { id: true, level: true, exp: true },
-    });
-  });
+export type ExpResult = { level: number; exp: number; levelsGained: number[] };
+
+/**
+ * คำนวณ level-up จาก EXP ที่ได้รับ (ต้องใช้ EXP = level ปัจจุบัน × 100 ต่อเลเวล ต้นทุนสะสมถึง
+ * level N ≈ 50N(N-1) — กำลังสอง) เป็น pure function ไม่แตะ DB เพื่อให้ผู้เรียก (packs.ts/daily.ts)
+ * ใช้ร่วมกันได้ภายใน transaction ของตัวเอง แทนก็อป while-loop ซ้ำ 3 ที่แบบเดิม
+ * คืน levelsGained ทุกเลเวลที่ข้ามผ่าน (เผื่อ EXP ก้อนใหญ่ข้ามหลายเลเวลพร้อมกัน) ให้ผู้เรียกเอาไป
+ * เทียบกับ LEVEL_MILESTONES เพื่อแจกรางวัลต่อเลเวล
+ */
+export function applyExp(level: number, exp: number, gained: number): ExpResult {
+  exp += gained;
+  const levelsGained: number[] = [];
+  while (exp >= level * 100) {
+    exp -= level * 100;
+    level += 1;
+    levelsGained.push(level);
+  }
+  return { level, exp, levelsGained };
+}
+
+export type LevelReward = { silver: number; gold: number; freePackId?: string };
+
+/**
+ * รางวัล level-up ตาม gdd.txt "ทุก Level ได้ Silver + Pack" (Cosmetic ยังไม่มีระบบรองรับ ข้ามไปก่อน):
+ * ทุกเลเวล = Silver เพิ่มตามเลเวล, ทุก 5/10/25 เลเวล = แถมซองฟรี (เช็คจากสูงไปต่ำ เอาแค่ระดับเดียว
+ * กันรางวัลซ้อนทับตอนหารลงตัวหลายเงื่อนไขพร้อมกัน เช่น level 25 หารด้วย 5 ลงตัวด้วย)
+ */
+export function levelReward(level: number): LevelReward {
+  const silver = level * 20;
+  if (level % 25 === 0) return { silver, gold: 10, freePackId: "royalprime" };
+  if (level % 10 === 0) return { silver, gold: 5, freePackId: "evolution" };
+  if (level % 5 === 0) return { silver, gold: 0, freePackId: "standard" };
+  return { silver, gold: 0 };
 }
 
 /** โบนัส Gold ตอนเติมเงินจริงครั้งแรก (โปรโมชั่นเปิดตัวเกม) */

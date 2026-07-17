@@ -1,5 +1,36 @@
 import { prisma } from "@/lib/prisma";
 import type { NotificationType } from "@/lib/constants";
+import type { LevelUpReward } from "@/lib/packs";
+
+const PACK_NAMES: Record<string, string> = {
+  standard: "Standard Pack",
+  evolution: "Evolution Pack",
+  royalprime: "Royal Prime Pack",
+};
+
+/** แจ้งเตือน level-up พร้อมรางวัลที่ได้ (silver/gold ทุกเลเวล + ซองฟรีถ้าถึง milestone 5/10/25) */
+export async function notifyLevelRewards(
+  userId: string,
+  level: number,
+  levelRewards: LevelUpReward[],
+): Promise<void> {
+  const totalSilver = levelRewards.reduce((sum, r) => sum + r.silver, 0);
+  const totalGold = levelRewards.reduce((sum, r) => sum + r.gold, 0);
+
+  const parts = [`+${totalSilver} Silver`];
+  if (totalGold) parts.push(`+${totalGold} Gold`);
+  for (const r of levelRewards) {
+    if (r.pack) parts.push(`ได้ ${PACK_NAMES[r.pack.packId] ?? r.pack.packId} ฟรี 🎁`);
+  }
+
+  await createNotification({
+    userId,
+    type: "LEVEL_UP",
+    title: `เลเวลอัพเป็น Lv.${level}!`,
+    body: parts.join(" · "),
+    href: "/profile",
+  });
+}
 
 /**
  * สร้างการแจ้งเตือนส่วนตัว — best-effort: ถ้า write พังจะไม่ throw
