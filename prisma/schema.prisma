@@ -54,10 +54,11 @@ model User {
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
 
-  cards         UserCard[]
-  squad         Squad?
-  notifications Notification[]
-  announcements Announcement[] @relation("AnnouncementAuthor")
+  cards            UserCard[]
+  squad            Squad?
+  notifications    Notification[]
+  announcements    Announcement[] @relation("AnnouncementAuthor")
+  missionProgress  MissionProgress[]
 }
 
 /// นักเตะจริง (ตัวตนของนักเตะ 1 คน — หนึ่งคนมีได้หลายการ์ด/หลายเวอร์ชัน)
@@ -176,4 +177,23 @@ model Announcement {
   author   User?   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([published, createdAt])
+}
+
+/// ความคืบหน้ามิชชั่น Daily/Weekly — ตารางเดียว generic ใช้ร่วมกับทุกมิชชั่นในอนาคต (ไม่ต้อง migrate เพิ่มเวลาเพิ่มมิชชั่นใหม่)
+/// missionKey ต้องมาจาก MISSION_KEYS ใน src/lib/missionConfig.ts เท่านั้น — ดู docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md
+model MissionProgress {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  missionKey String // เช่น "daily_login" — จาก MISSION_KEYS เท่านั้น
+  periodKey  String // daily: epoch-day string / weekly: epoch-week string (ดู src/lib/missionPeriod.ts)
+
+  progress Int     @default(0)
+  claimed  Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, missionKey, periodKey])
+  @@index([userId, periodKey])
 }
