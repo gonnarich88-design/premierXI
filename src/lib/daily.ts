@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { grantFreePack, type OpenedCard, type LevelUpReward } from "@/lib/packs";
 import { applyExp, levelReward } from "@/lib/economy";
+import { bumpLoginMissions } from "@/lib/missions";
 
 // index วันแบบ UTC (จำนวนวันนับจาก epoch) ใช้เทียบว่าวันเดียวกัน/วันต่อกันไหม — export ให้ missionPeriod.ts ใช้ boundary เดียวกัน
 export function dayIndex(d: Date): number {
@@ -101,6 +102,8 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
     const last = user.lastClaimDate ? dayIndex(user.lastClaimDate) : null;
 
     if (last === today) return { ok: false, error: "วันนี้รับไปแล้ว" };
+
+    await bumpLoginMissions(tx, userId, now);
 
     const streak = last === today - 1 ? user.loginStreak + 1 : 1;
     const reward = rewardForStreak(streak);
