@@ -52,13 +52,13 @@
   - พบ 2 จุดที่แก้ให้ถูกต้องระหว่าง extract: Agüero/David Silva ธงชาติบนรูปการ์ดผิด (ขึ้น France/Netherlands) แก้เป็น Argentina/Spain จริงตามคนจริง, Welbeck club มี HTML entity `&amp;` แก้เป็น `&`
 - [x] Prisma: เพิ่ม `User.evoShards`, `User.primeShards` (แยก pool จาก `shards` เดิม) + migrate (`20260716084711_add_evo_prime_shards`)
 - [x] Pack ใหม่ 3 แบบ เปิดทีละ **5 ใบ/ครั้ง** (เดิมเปิดทีละ 1 ใบ) — `src/lib/packs.ts`:
-  - **Standard** (300 silver): สุ่มอิสระ 5 ใบจากพูล normal เดิม (Bronze 55% / Silver 38% / Gold 7%)
+  - **Standard** (300 silver): สุ่มอิสระ 5 ใบจากพูล normal เดิม (Bronze 55% / Silver 38% / Gold 7% ตอนแรก — ปรับเป็น Bronze 25% / Silver 50% / Gold 25% ใน ขั้น 10 balance review เพราะ Gold rate เดิมต่ำเกินไป)
   - **Evolution** (10 gold): การันตี 1 ใบจากพูล Evolution 44 ใบ (สุ่มเท่ากันทุกใบ 1/44) + 10% โอกาสโบนัสใบพิเศษที่ 2 + ที่เหลือสุ่ม normal เรตดีขึ้น (Bronze 10% / Silver 50% / Gold 40%)
   - **Royal Prime** (20 gold): การันตี 1 ใบจากพูล Royal Prime 44 ใบ (1/44) + 12% โอกาสโบนัสใบที่ 2 + ที่เหลือสุ่ม normal เรตเดียวกับ Evolution
   - ลบ Premium pack + Ticket pack เดิมออกจาก `PACKS` registry แล้ว (รวมถึง pity system ที่ผูกกับ Premium)
 - [x] `SHARD_VALUE` เพิ่ม tier ใหม่: Hero = 100, Legend = 250 (เดิม Bronze 5 / Silver 15 / Gold 50)
 - [x] Shard Exchange (`SHARD_EXCHANGE` ใน `packs.ts`, ฟังก์ชัน `openPackWithShards`) — แลก shard เป็นซองฟรี แยก pool ตามที่มา กันเอา shard ถูกไปซื้อของแพง:
-  - Normal shards 600 → Standard Pack ฟรี 1 ครั้ง
+  - Normal shards 600 → Standard Pack ฟรี 1 ครั้ง (ปรับเป็น 500 ใน ขั้น 10 balance review เพื่อปิด rebate gap)
   - Evolution shards 500 → Evolution Pack ฟรี 1 ครั้ง
   - Royal Prime shards 1,000 → Royal Prime Pack ฟรี 1 ครั้ง
 - [x] Daily login (`src/lib/daily.ts`): silver = `100 + day*30` (+ bonus 300 วันที่ 7 แทน packTicket เดิม), เลิกแจก packTicket ทั้งจาก daily login และ Starter Pack (currency คงไว้ในระบบเผื่ออนาคต ไม่ลบออกจาก schema)
@@ -67,7 +67,7 @@
 
 ## ขั้น 3.6 — โปรโมชั่นเปิดตัวเกม (Launch Promotion)
 เป้าหมาย: ให้สาย F2P มีทางเข้าถึง Evolution/Royal Prime ได้เร็วขึ้น (เดิมต้องรอ 60-120 วันจาก Gold ที่หาได้) + hook คนเล่นต่อเนื่องช่วงเปิดตัว โดยไม่ทำลายความหายากของการ์ดพรีเมียมในระยะยาว
-- [x] Weekly Gold trickle: เพิ่ม `+2 Gold` ในวันที่ 7 ของทุกรอบ (จุดเดียวกับ silver bonus 610) นอกเหนือจาก `+5 Gold` ทุก 30 วันเดิม — F2P สะสมได้ 13 Gold ใน 30 วันแรก (พอเปิด Evolution ได้ 1 ครั้งใน 30 วัน แทนที่จะต้องรอ 60 วัน)
+- [x] Weekly Gold trickle: เพิ่ม `+2 Gold` ในวันที่ 7 ของทุกรอบ (จุดเดียวกับ silver bonus 610) นอกเหนือจาก `+5 Gold` ทุก 30 วันเดิม — ตอนแรก F2P สะสมได้ 13 Gold ใน 30 วันแรก (พอเปิด Evolution ได้ 1 ครั้งใน 30 วัน แทนที่จะต้องรอ 60 วัน) — **ปรับเพิ่มเป็น `+5 Gold` ใน ขั้น 10 balance review** (จาก +2→+5) ตอนนี้ login ต่อเนื่องครบ 30 วันได้ 25 Gold รวม (รายละเอียด: `docs/game-guide.md` หัวข้อ 5)
 - [x] Milestone แจกซองพิเศษฟรี **ครั้งเดียวตลอดไป** (ไม่วนซ้ำ ป้องกันการแจก Royal Prime ฟรีทุกเดือนซึ่งจะทำลายความหายาก) — นับจาก `User.totalLogins` (สะสมรวม ไม่ต้อง login ติดต่อกัน ต่างจาก `loginStreak` ที่ใช้คำนวณ silver/gold รายวัน):
   - Login สะสมครบ 15 วัน → แจก Evolution Pack ฟรี 1 ครั้ง (`User.evoMilestoneClaimed`)
   - Login สะสมครบ 30 วัน → แจก Royal Prime Pack ฟรี 1 ครั้ง (`User.primeMilestoneClaimed`)
@@ -79,7 +79,7 @@
 ## ขั้น 4 — Team Building
 - [x] เลือก Formation (4-3-3, 4-4-2, 3-5-2, 4-2-3-1) พร้อมพิกัดบนสนาม
 - [x] วางนักเตะ 11 คนตามตำแหน่ง (แตะช่อง → เลือกการ์ด, กันใช้ซ้ำ)
-- [x] คำนวณ Chemistry (สโมสร/ลีก/ชาติ + ตรงตำแหน่ง) + team rating — เพิ่ม OVR Penalty ตามตำแหน่ง 2026-07-16 (กลุ่มเดียวกัน -10, คนละกลุ่ม -25) กันกลยุทธ์ยัดการ์ด OVR สูงสุดไม่สนตำแหน่ง ดู `docs/game-guide.md` หัวข้อ 10 + 13.2
+- [x] คำนวณ Chemistry (ตอนแรกอิงสโมสร/ลีก/ชาติ + ตรงตำแหน่ง — **ตัด league ออกในภายหลัง** ดู ขั้น 10 หัวข้อ Chemistry ด้านล่าง เหลือแค่สโมสร/ชาติ) + team rating — เพิ่ม OVR Penalty ตามตำแหน่ง 2026-07-16 (กลุ่มเดียวกัน -10, คนละกลุ่ม -25) กันกลยุทธ์ยัดการ์ด OVR สูงสุดไม่สนตำแหน่ง ดู `docs/game-guide.md` หัวข้อ 10 + 13.2
 - [x] Chemistry: แก้ avgOvr ให้หารด้วย 11 คงที่ (ปิดช่องโหว่ทีมไม่ครบยัง rating สูง) + เพิ่ม Full Unity bonus (ครบ 11 คนสโมสรเดียวกัน+ตำแหน่ง exact ทุกคน → rating +2 experimental + เส้นเขียว/badge บนสนาม) — logic verify ผ่านสคริปต์ (8 scenario), `npx tsc --noEmit` และ `npm run build` ผ่านหมด สเปคที่ `docs/superpowers/specs/2026-07-16-chemistry-full-team-design.md` — user เช็ค visual บน Preview แล้วเจอเส้น ring ตัดกัน (centroid-angle-sort ไม่เสถียรเมื่อมีจุดใกล้ศูนย์กลางสนาม) แก้เป็น convex hull + cheapest insertion แทน (การันตีไม่ตัดกันเอง, ทดสอบครบทั้ง 4 ฟอร์เมชัน) ยืนยันผ่านแล้ว
 - [x] บันทึกทีมของผู้เล่น (Squad/SquadSlot) + verify end-to-end
 

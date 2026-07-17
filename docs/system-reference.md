@@ -801,10 +801,10 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 | PvP Matchmaking | ยังไม่ทำ | หน้า `/pvp` เป็น placeholder |
 | PvP Result Calculation | ยังไม่ทำ | มีแนวคิดใน TASKS.md |
 | Ranking Tiers | ยังไม่ทำ | Bronze → Legend |
-| Daily/Weekly Missions | ยังไม่ทำ | มี schema รองรับในอนาคต |
+| Daily/Weekly Missions | **ทำแล้ว** (ขั้น 5) | `src/lib/missionConfig.ts`/`missions.ts` + `MissionList.tsx` — 3 daily + 2 weekly ผูก action จริง |
 | Achievements | ยังไม่ทำ | - |
-| Collection Rewards | ยังไม่ทำ | ครบทีม/ชาติ/ลีก/Big6 |
-| Level Milestone Rewards | ยังไม่ทำ | ปัจจุบันเลเวลอัพแค่สร้าง notification |
+| Collection Rewards | ยังไม่ทำ | ครบทีม/ชาติ/ลีก/Big6 (หน้า Collection แสดงการ์ดทำแล้ว มีแค่ reward ที่ยังไม่ทำ) |
+| Level Milestone Rewards | **ทำแล้ว** (ขั้น 5) | `applyExp()`/`levelReward()` ใน `src/lib/economy.ts` — ทุกเลเวลได้ Silver, ทุก 5/10/25 เลเวลแถม Pack ฟรี (+Gold) |
 | Cosmetic System | ยังไม่ทำ | - |
 | Fantasy Premier XI | ยังไม่ทำ | Phase 4 |
 | Season / Event | ยังไม่ทำ | Phase 8 |
