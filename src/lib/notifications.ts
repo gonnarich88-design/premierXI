@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { NotificationType } from "@/lib/constants";
-import type { LevelUpReward } from "@/lib/packs";
+import type { LevelUpReward, OpenedCard } from "@/lib/packs";
 
 const PACK_NAMES: Record<string, string> = {
   standard: "Standard Pack",
@@ -29,6 +29,26 @@ export async function notifyLevelRewards(
     title: `เลเวลอัพเป็น Lv.${level}!`,
     body: parts.join(" · "),
     href: "/profile",
+  });
+}
+
+/** แจ้งเตือนเคลมมิชชั่นสำเร็จ — silver/EXP เสมอ + ซองฟรีถ้ามี (เช่น weekly_login5) */
+export async function notifyMissionClaimed(
+  userId: string,
+  missionLabel: string,
+  reward: { silver: number; exp: number },
+  pack?: { packId: string; cards: OpenedCard[] },
+): Promise<void> {
+  const parts = [`+${reward.silver} Silver`];
+  if (reward.exp) parts.push(`+${reward.exp} EXP`);
+  if (pack) parts.push(`ได้ ${PACK_NAMES[pack.packId] ?? pack.packId} ฟรี`);
+
+  await createNotification({
+    userId,
+    type: "MISSION_CLAIMED",
+    title: `เคลมมิชชั่นสำเร็จ: ${missionLabel}`,
+    body: parts.join(" · "),
+    href: "/",
   });
 }
 

@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MISSIONS, MISSION_KEYS, type MissionKey } from "@/lib/missionConfig";
 import { dailyPeriodKey, weeklyPeriodKey } from "@/lib/missionPeriod";
+import { applyExp, levelReward } from "@/lib/economy";
+import { grantFreePack, type LevelUpReward, type OpenedCard } from "@/lib/packs";
 
 function periodKeyFor(period: "daily" | "weekly", now: Date): string {
   return period === "daily" ? dailyPeriodKey(now) : weeklyPeriodKey(now);
@@ -89,6 +91,104 @@ export async function getMissionStatus(userId: string, now: Date): Promise<Missi
       target: config.target,
       claimed: row?.claimed ?? false,
       reward: config.reward,
+    };
+  });
+}
+
+export type ClaimMissionResult =
+  | {
+      ok: true;
+      reward: { silver: number; exp: number };
+      pack?: { packId: string; cards: OpenedCard[] };
+      leveledUp: boolean;
+      level: number;
+      levelRewards: LevelUpReward[];
+      missionLabel: string;
+    }
+  | { ok: false; error: string };
+
+/**
+ * เคลมรางวัลมิชชั่น — atomic compare-and-set (updateMany + เช็ค count) แทนอ่านแล้วค่อยเขียน
+ * ไม่ต้องพึ่ง transaction-serialization ของ SQLite เป็น safety net หลัก (สำคัญถ้าย้าย DB ในอนาคต)
+ * แจกรางวัลผ่าน applyExp()/levelReward()/grantFreePack() เดิมเท่านั้น — แพทเทิร์นเดียวกับ claimDaily()/finalizeOpen()
+ */
+export async function claimMission(
+  userId: string,
+  missionKey: string,
+  now: Date,
+): Promise<ClaimMissionResult> {
+  const config = MISSIONS[missionKey as MissionKey];
+  if (!config) return { ok: false, error: "ไม่พบมิชชั่นนี้" };
+
+  return prisma.$transaction(async (tx) => {
+    const periodKey = periodKeyFor(config.period, now);
+
+    const claim = await tx.missionProgress.updateMany({
+      where: {
+        userId,
+        missionKey: config.key,
+        periodKey,
+        claimed: false,
+        progress: { gte: config.target },
+      },
+      data: { claimed: true },
+    });
+    if (claim.count === 0) {
+      const row = await tx.missionProgress.findUnique({
+        where: { userId_missionKey_periodKey: { userId, missionKey: config.key, periodKey } },
+      });
+      return { ok: false, error: row?.claimed ? "เคลมไปแล้ว" : "ยังทำไม่ครบเงื่อนไข" };
+    }
+
+    const user = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { level: true, exp: true },
+    });
+    const { level, exp, levelsGained } = applyExp(user.level, user.exp, config.reward.exp);
+    const rewardsByLevel = levelsGained.map((lv) => ({ lv, reward: levelReward(lv) }));
+    const levelSilverBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.silver, 0);
+    const levelGoldBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.gold, 0);
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        silver: { increment: config.reward.silver + levelSilverBonus },
+        gold: { increment: levelGoldBonus },
+        level,
+        exp,
+      },
+    });
+
+    const levelRewards: LevelUpReward[] = [];
+    let finalLevel = level;
+    for (const { lv, reward } of rewardsByLevel) {
+      const entry: LevelUpReward = { level: lv, silver: reward.silver, gold: reward.gold };
+      if (reward.freePackId) {
+        const bonus = await grantFreePack(tx, userId, reward.freePackId);
+        entry.pack = { packId: reward.freePackId, cards: bonus.cards };
+        levelRewards.push(entry, ...bonus.levelRewards);
+        finalLevel = bonus.level;
+      } else {
+        levelRewards.push(entry);
+      }
+    }
+
+    let pack: { packId: string; cards: OpenedCard[] } | undefined;
+    if (config.reward.freePackId) {
+      const bonus = await grantFreePack(tx, userId, config.reward.freePackId);
+      pack = { packId: config.reward.freePackId, cards: bonus.cards };
+      levelRewards.push(...bonus.levelRewards);
+      finalLevel = Math.max(finalLevel, bonus.level);
+    }
+
+    return {
+      ok: true,
+      reward: { silver: config.reward.silver, exp: config.reward.exp },
+      pack,
+      leveledUp: finalLevel > user.level,
+      level: finalLevel,
+      levelRewards,
+      missionLabel: config.label,
     };
   });
 }
