@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
   hashPassword,
@@ -74,11 +74,15 @@ export async function logoutAction() {
 }
 
 // ===== TEMP: บัญชีทดสอบ (ลบทั้งบล็อกนี้ + ปุ่มในหน้า login/home เมื่อระบบเสร็จ) =====
+// เปิดใช้เฉพาะตอนตั้ง ENABLE_DEV_LOGIN=true ใน .env (ไม่ใช้ NODE_ENV เพราะ preview รัน `next build && next start`
+// ซึ่ง NODE_ENV เป็น "production" เสมอ) — ต้องลบ env var นี้ออกก่อน deploy จริงเพื่อปิดช่องโหว่
 const TEST_USERNAME = "test";
 const TEST_PHONE = "0800000000";
 const TEST_PASSWORD = "test1234";
+const DEV_LOGIN_ENABLED = process.env.ENABLE_DEV_LOGIN === "true";
 
 export async function devLoginAction() {
+  if (!DEV_LOGIN_ENABLED) notFound();
   let user = await prisma.user.findUnique({
     where: { username: TEST_USERNAME },
     select: { id: true },
@@ -103,6 +107,7 @@ export async function devLoginAction() {
 
 // เริ่มใหม่: ลบบัญชี test เดิม (การ์ด + ทีม cascade) แล้วสร้างใหม่ + ล็อกอิน = เข้าครั้งแรก
 export async function resetTestUserAction() {
+  if (!DEV_LOGIN_ENABLED) notFound();
   await prisma.user.deleteMany({ where: { username: TEST_USERNAME } });
   const user = await prisma.user.create({
     data: {

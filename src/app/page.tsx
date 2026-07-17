@@ -49,23 +49,27 @@ function GuestHome() {
         </Link>
       </div>
 
-      {/* TEMP: ปุ่มบัญชีทดสอบ (ลบเมื่อระบบเสร็จ) */}
-      <form action={devLoginAction}>
-        <button
-          type="submit"
-          className="w-full rounded-xl border border-dashed border-accent/60 bg-surface py-3 text-sm font-semibold text-accent"
-        >
-          เข้าสู่ระบบด้วยบัญชีทดสอบ (test)
-        </button>
-      </form>
-      <form action={resetTestUserAction}>
-        <button
-          type="submit"
-          className="w-full rounded-xl border border-dashed border-border bg-surface py-3 text-sm font-semibold text-muted"
-        >
-          เริ่มใหม่ (ล้าง test แล้วเข้าครั้งแรก)
-        </button>
-      </form>
+      {/* TEMP: ปุ่มบัญชีทดสอบ (ลบเมื่อระบบเสร็จ) — ซ่อนถ้าไม่ได้เปิด ENABLE_DEV_LOGIN */}
+      {process.env.ENABLE_DEV_LOGIN === "true" && (
+        <>
+          <form action={devLoginAction}>
+            <button
+              type="submit"
+              className="w-full rounded-xl border border-dashed border-accent/60 bg-surface py-3 text-sm font-semibold text-accent"
+            >
+              เข้าสู่ระบบด้วยบัญชีทดสอบ (test)
+            </button>
+          </form>
+          <form action={resetTestUserAction}>
+            <button
+              type="submit"
+              className="w-full rounded-xl border border-dashed border-border bg-surface py-3 text-sm font-semibold text-muted"
+            >
+              เริ่มใหม่ (ล้าง test แล้วเข้าครั้งแรก)
+            </button>
+          </form>
+        </>
+      )}
     </section>
   );
 }
