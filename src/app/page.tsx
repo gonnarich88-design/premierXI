@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { devLoginAction, resetTestUserAction } from "@/app/actions/auth";
 import { getDailyStatus } from "@/lib/daily";
 import DailyClaim from "@/components/DailyClaim";
+import MissionList from "@/components/MissionList";
+import { getMissionStatus } from "@/lib/missions";
 import StarterPackModal from "@/components/StarterPackModal";
 
 export default async function HomePage() {
@@ -91,6 +93,7 @@ async function LoggedInHome({
 }) {
   const cardCount = await prisma.userCard.count({ where: { userId } });
   const daily = await getDailyStatus(userId);
+  const missions = await getMissionStatus(userId, new Date());
   const need = user.level * 100;
   const pct = Math.min(100, Math.round((user.exp / need) * 100));
 
@@ -152,6 +155,9 @@ async function LoggedInHome({
         nextReward={daily.nextReward}
         totalLogins={daily.totalLogins}
       />
+
+      {/* Missions */}
+      <MissionList missions={missions} />
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">

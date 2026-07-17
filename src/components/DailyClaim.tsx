@@ -112,7 +112,7 @@ export default function DailyClaim({
   );
 }
 
-function Reward({
+export function Reward({
   label,
   value,
   className,
