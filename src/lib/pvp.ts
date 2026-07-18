@@ -88,7 +88,7 @@ function pickGoalCount(rng: () => number): number {
 }
 
 function scoreGoal(lineup: LineupEntry[], rng: () => number): GoalEvent {
-  const scorer = pickWeighted(lineup, (e) => SHOOT_WEIGHT[POSITION_GROUP[e.slotPos as Position]], rng);
+  const scorer = pickWeighted(lineup, (e) => SHOOT_WEIGHT[POSITION_GROUP[e.slotPos as Position]] * e.ovr, rng);
   const minute = Math.floor(rng() * 90) + 1;
   if (rng() >= 0.75) return { minute, scorer: scorer.name };
 
@@ -291,7 +291,16 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
       },
     });
 
-    // 1. Lazy season check — ก่อนอ่าน pvpRP ไปคำนวณอะไรต่อเสมอ (กันข้าม season boundary กลาง flow)
+    // 1. อ่าน Squad ตัวเอง validate ครบ 11 ตำแหน่งก่อนแตะโควตา/ticket/season reward
+    // (กันเสียโควตาฟรีหรือ Gold ถ้าทีมยังไม่พร้อม — ดู Global Constraints ข้อ 1; และกัน season-end
+    // reward commit เข้า DB ทั้งที่แมตช์ reject เพราะ transaction ปกติ return ก็ commit ไม่ rollback)
+    const mySquad = await getOrCreateSquad(userId, tx);
+    const myFilled = mySquad.slots.filter((s) => s.cardId !== null).length;
+    if (myFilled !== 11) {
+      return { ok: false, error: "จัดทีมให้ครบ 11 ตำแหน่งก่อน" };
+    }
+
+    // 2. Lazy season check — ก่อนอ่าน pvpRP ไปคำนวณอะไรต่อเสมอ (กันข้าม season boundary กลาง flow)
     const currentSeasonKey = seasonKey(now);
     let pvpRP = user.pvpRP;
     let seasonEndReward: SeasonEndReward | undefined;
@@ -322,22 +331,19 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
       await tx.user.update({ where: { id: userId }, data: { pvpRP: 0, pvpSeasonKey: currentSeasonKey } });
     }
 
-    // 2. อ่าน Squad ตัวเอง validate ครบ 11 ตำแหน่งก่อนแตะโควตา/ticket
-    // (กันเสียโควตาฟรีหรือ Gold ถ้าทีมยังไม่พร้อม — ดู Global Constraints ข้อ 1)
-    const mySquad = await getOrCreateSquad(userId, tx);
-    const myFilled = mySquad.slots.filter((s) => s.cardId !== null).length;
-    if (myFilled !== 11) {
-      return { ok: false, error: "จัดทีมให้ครบ 11 ตำแหน่งก่อน" };
-    }
-
     // 3. เช็ค+ตัดโควตาแบบ atomic compare-and-set (เหมือน claimMission() ใน missions.ts)
     const today = dayIndex(now);
     const storedDate = user.pvpMatchesDate ? dayIndex(user.pvpMatchesDate) : null;
-    let matchesToday = user.pvpMatchesToday;
     if (storedDate !== today) {
-      await tx.user.update({ where: { id: userId }, data: { pvpMatchesToday: 0, pvpMatchesDate: now } });
-      matchesToday = 0;
+      // compare-and-set บน pvpMatchesDate ที่อ่านมาตอนต้น tx เท่านั้น — กัน race ตอนเที่ยงคืน UTC ที่
+      // tx อื่นอาจ reset/increment ไปแล้วจาก snapshot คนละอัน (ถ้า where ไม่ match ก็ no-op เฉยๆ ถูกต้องแล้ว)
+      await tx.user.updateMany({
+        where: { id: userId, pvpMatchesDate: user.pvpMatchesDate },
+        data: { pvpMatchesToday: 0, pvpMatchesDate: now },
+      });
     }
+    const freshQuota = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { pvpMatchesToday: true } });
+    let matchesToday = freshQuota.pvpMatchesToday;
 
     let isTicketMatch: boolean;
     if (matchesToday < FREE_MATCHES_PER_DAY) {
