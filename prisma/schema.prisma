@@ -51,6 +51,13 @@ model User {
   // Notification center: เวลาที่อ่านข่าว (Announcement) ล่าสุด — ใช้คำนวณ unread ของข่าว
   lastReadNewsAt DateTime?
 
+  // PvP (Phase 3) — tier derive จาก pvpRP ผ่าน tierForRP() ใน src/lib/pvp.ts เสมอ ไม่ store tier แยก
+  pvpRP           Int       @default(0)
+  pvpSeasonKey    String? // "YYYY-MM" แบบ UTC (ดู seasonKey() ใน pvp.ts) — null = ยังไม่เคยแข่งเลย
+  pvpWinStreak    Int       @default(0)
+  pvpMatchesToday Int       @default(0)
+  pvpMatchesDate  DateTime? // เทียบ dayIndex() เหมือน daily.ts เพื่อรีเซ็ตโควตารายวัน
+
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
 
@@ -132,6 +139,11 @@ model Squad {
   formation String      @default("4-3-3")
   slots     SquadSlot[]
   updatedAt DateTime    @updatedAt
+
+  // PvP matchmaking query filter เท่านั้น — ไม่ใช่ source of truth ของแมตช์จริง (ดู pvp.ts: findOpponent/playPvpMatch)
+  cachedRating Int @default(0)
+
+  @@index([cachedRating])
 }
 
 /// ช่องในทีม (0-10) ผูกกับการ์ดที่ผู้เล่นมี
