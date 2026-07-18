@@ -105,14 +105,11 @@
 - [x] Wire triggers: รับรางวัลรายวัน · เปิดซอง (normal + starter) · level up (ตัด PvP — ยังไม่ทำจริง)
 - [x] Verify: prisma migrate + tsc + lint + build + smoke test data layer (unread 3→0)
 
-## ขั้น 6 — Phase 3: PvP [~]
-- [ ] Matchmaking (จับคู่กับทีมผู้เล่นอื่น / bot)
-- [ ] เครื่องคำนวณผล: พลังทีม + Chemistry + Formation + random modifier
-- [ ] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold
-  - แนวคิดรางวัล (วิเคราะห์ไว้แล้ว รอตกลง): hybrid EXP+Silver — ชนะ 25exp/60silver (×0.5-1.5 ตาม opponent strength), แพ้ 8exp/15silver (เฉพาะโควตาฟรี 5 ครั้ง ไม่รวมแมตช์ที่ซื้อด้วย gold), win-streak bonus +5exp/ชนะติดกัน (เพดาน +15)
-  - เหตุผล: silver/แมตช์ต้องต่ำกว่าค่า gold ที่จ่ายซื้อ เพื่อกัน pay-to-farm loop (ซื้อแมตช์ด้วย gold คุ้มน้อยกว่าเอา gold ไปเปิด Evolution/Royal Prime Pack โดยตรง — อัพเดตชื่อ pack ตาม ขั้น 3.5 ที่ยกเลิก Premium Pack ไปแล้ว)
-  - implement ควรเรียกผ่าน `applyExp()`/`levelReward()` ใน `economy.ts` (แก้ที่ ขั้น 5 แล้ว — เดิมเป็น `grantExp()` dead code ตอนนี้ถูกแทนที่แล้ว) ตามแพทเทิร์นเดียวกับ `finalizeOpen` ใน `packs.ts`/`claimDaily` ใน `daily.ts`: เรียก `applyExp` ได้ level/exp/levelsGained ใหม่ → รวม silver/gold bonus เข้า `tx.user.update` เดียวกัน → ค่อยแจกซองฟรีถ้ามี milestone
-- [ ] Ranking 6 tier (Bronze→Legend) + season reset + reward
+## ขั้น 6 — Phase 3: PvP [x]
+- [x] Matchmaking (จับคู่กับทีมผู้เล่นอื่น / bot) — hybrid: หา Squad คนอื่นที่ `cachedRating` ในช่วง ±20% ก่อน (ใช้เป็นแค่ query filter), ไม่เจอ fallback สุ่มทีมบอทจากพูลการ์ดจริง (ขยายช่วง OVR ±15%→±30%→±50%→ไม่จำกัด กันหาไม่เจอ) — `src/lib/pvp.ts: findOpponent/generateBotSquad`
+- [x] เครื่องคำนวณผล: พลังทีม + Chemistry + Formation + random modifier — `computeChemistry()` สดทั้งสองฝั่งเสมอ (ไม่ใช้ `cachedRating` ตรงๆ กันข้อมูลค้าง) + `simulateMatch()` จำลองสกอร์บอลจริงด้วย weighted goal-count distribution + goal events ถ่วงน้ำหนักตาม `slotPos` — `src/lib/pvp.ts`
+- [x] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold — atomic compare-and-set แบบเดียวกับ mission system (`updateMany` เช็คเงื่อนไขในตัว query), `isTicketMatch` derive ฝั่ง server ทั้งหมด (ไม่มี client input ให้เชื่อ), ticket match แพ้ได้ EXP/Silver = 0 กัน pay-to-farm — `src/lib/pvp.ts: playPvpMatch`
+- [x] Ranking 6 tier (Bronze→Legend) + season reset + reward — tier derive จาก `pvpRP` ผ่าน pure function `tierForRP()` (ไม่ store แยก), season = เดือนปฏิทิน UTC, lazy hard-reset ตอนตรวจพบ season เปลี่ยน พร้อมแจกรางวัลจบ season ตาม tier ก่อนรีเซ็ต — ดีไซน์เต็มรีวิวโดย Codex แล้ว (13/13 ข้อ) ที่ `docs/superpowers/specs/2026-07-17-pvp-design.md`
 
 ## ขั้น 7 — Phase 4: Fantasy Premier XI
 - [ ] Admin: จัดการ Gameweek + กรอกผลงานนักเตะจริง (goals/assists/clean sheet/cards...)
