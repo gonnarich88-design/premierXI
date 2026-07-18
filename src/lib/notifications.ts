@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import type { NotificationType } from "@/lib/constants";
 import type { LevelUpReward, OpenedCard } from "@/lib/packs";
+import { PVP_TIERS, type PvpTierKey } from "@/lib/pvp";
 
 const PACK_NAMES: Record<string, string> = {
   standard: "Standard Pack",
   evolution: "Evolution Pack",
   royalprime: "Royal Prime Pack",
 };
+
+const PVP_TIER_LABEL: Record<string, string> = Object.fromEntries(PVP_TIERS.map((t) => [t.key, t.label]));
 
 /** แจ้งเตือน level-up พร้อมรางวัลที่ได้ (silver/gold ทุกเลเวล + ซองฟรีถ้าถึง milestone 5/10/25) */
 export async function notifyLevelRewards(
@@ -49,6 +52,52 @@ export async function notifyMissionClaimed(
     title: `เคลมมิชชั่นสำเร็จ: ${missionLabel}`,
     body: parts.join(" · "),
     href: "/",
+  });
+}
+
+/** แจ้งเตือนผล PvP — แพ้ชนะ/เสมอ + RP delta + tier change ถ้ามี */
+export async function notifyPvpMatch(
+  userId: string,
+  result: {
+    myGoals: number;
+    oppGoals: number;
+    outcome: "win" | "draw" | "lose";
+    rpDelta: number;
+    promoted: boolean;
+    demoted: boolean;
+    tierAfter: PvpTierKey;
+  },
+): Promise<void> {
+  const outcomeLabel = result.outcome === "win" ? "ชนะ" : result.outcome === "draw" ? "เสมอ" : "แพ้";
+  const rpText = result.rpDelta >= 0 ? `+${result.rpDelta}` : `${result.rpDelta}`;
+  let body = `${outcomeLabel} ${result.myGoals}-${result.oppGoals} · ${rpText} RP`;
+  if (result.promoted) body += ` · เลื่อนขั้นเป็น ${PVP_TIER_LABEL[result.tierAfter] ?? result.tierAfter}!`;
+  if (result.demoted) body += ` · ตกขั้นเป็น ${PVP_TIER_LABEL[result.tierAfter] ?? result.tierAfter}`;
+
+  await createNotification({
+    userId,
+    type: "PVP_MATCH",
+    title: "ผลการแข่งขัน PvP",
+    body,
+    href: "/pvp",
+  });
+}
+
+/** แจ้งเตือนรางวัลจบ season PvP — แจกก่อน hard reset ตาม tier สุดท้ายก่อนขึ้นเดือนใหม่ */
+export async function notifyPvpSeasonEnd(
+  userId: string,
+  reward: { tier: PvpTierKey; silver: number; gold: number; pack?: { packId: string; cards: OpenedCard[] } },
+): Promise<void> {
+  const parts = [`+${reward.silver} Silver`];
+  if (reward.gold) parts.push(`+${reward.gold} Gold`);
+  if (reward.pack) parts.push(`ได้ ${PACK_NAMES[reward.pack.packId] ?? reward.pack.packId} ฟรี`);
+
+  await createNotification({
+    userId,
+    type: "PVP_MATCH",
+    title: `จบ Season PvP — Tier ${PVP_TIER_LABEL[reward.tier] ?? reward.tier}`,
+    body: parts.join(" · "),
+    href: "/pvp",
   });
 }
 

@@ -88,6 +88,7 @@ export const NOTIFICATION_TYPES = [
   "PACK_OPENED",
   "LEVEL_UP",
   "MISSION_CLAIMED",
+  "PVP_MATCH",
   "SYSTEM",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
