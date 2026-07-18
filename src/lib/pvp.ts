@@ -295,6 +295,8 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
     const currentSeasonKey = seasonKey(now);
     let pvpRP = user.pvpRP;
     let seasonEndReward: SeasonEndReward | undefined;
+    let currentLevel = user.level;
+    let currentExp = user.exp;
     if (user.pvpSeasonKey !== currentSeasonKey) {
       if (user.pvpSeasonKey !== null) {
         const tier = tierForRP(pvpRP);
@@ -303,6 +305,14 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
         if (reward.freePackId) {
           const bonus = await grantFreePack(tx, userId, reward.freePackId);
           pack = { packId: reward.freePackId, cards: bonus.cards };
+          // grantFreePack (ผ่าน finalizeOpen) commit level/exp ใหม่ใน tx เดียวกันแล้ว — ต้อง refresh
+          // local state ไม่งั้น step 7 จะคำนวณ applyExp จาก snapshot เก่า ทำ EXP หายและแจกรางวัล milestone ซ้ำ
+          const refreshed = await tx.user.findUniqueOrThrow({
+            where: { id: userId },
+            select: { level: true, exp: true },
+          });
+          currentLevel = refreshed.level;
+          currentExp = refreshed.exp;
         }
         if (reward.silver > 0) await addCurrency(userId, "silver", reward.silver, tx);
         if (reward.gold > 0) await addCurrency(userId, "gold", reward.gold, tx);
@@ -387,7 +397,7 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
     const rpAfter = Math.max(0, pvpRP + rpDelta);
 
     // 7. Apply EXP/level + silver + RP + win-streak
-    const { level, exp, levelsGained } = applyExp(user.level, user.exp, expGained);
+    const { level, exp, levelsGained } = applyExp(currentLevel, currentExp, expGained);
     const rewardsByLevel = levelsGained.map((lv) => ({ lv, reward: levelReward(lv) }));
     const levelSilverBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.silver, 0);
     const levelGoldBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.gold, 0);
@@ -441,7 +451,7 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
       tierAfter,
       promoted,
       demoted,
-      leveledUp: finalLevel > user.level,
+      leveledUp: finalLevel > currentLevel,
       level: finalLevel,
       levelRewards,
       seasonEndReward,
