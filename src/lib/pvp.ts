@@ -1,7 +1,11 @@
 // PvP (Phase 3) — pattern เดียวกับ packs.ts/daily.ts: pure function ก่อน แยกจาก DB access
 // เพื่อเทสได้โดยไม่พึ่ง Math.random()/new Date() จริงตอนรัน — ดู docs/superpowers/specs/2026-07-17-pvp-design.md
 
-import { POSITION_GROUP, type Position } from "@/lib/constants";
+import { POSITION_GROUP, POSITIONS, type Position } from "@/lib/constants";
+import { Prisma } from "@prisma/client";
+import { computeChemistry } from "@/lib/chemistry";
+import { FORMATIONS } from "@/lib/formations";
+import { buildChemEntries, buildLineup } from "@/lib/squad";
 
 export const PVP_TIERS = [
   { key: "bronze", label: "Bronze", min: 0 },
@@ -117,4 +121,105 @@ export function simulateMatch(
 
   events.sort((a, b) => a.minute - b.minute);
   return { myGoals, oppGoals, events };
+}
+
+export type Opponent = { rating: number; lineup: LineupEntry[]; isBot: boolean };
+
+const POSITIONS_BY_GROUP: Record<"GK" | "DEF" | "MID" | "ATT", Position[]> = { GK: [], DEF: [], MID: [], ATT: [] };
+for (const pos of POSITIONS) {
+  POSITIONS_BY_GROUP[POSITION_GROUP[pos]].push(pos);
+}
+
+const BOT_OVR_RANGE_PCTS = [0.15, 0.3, 0.5];
+
+function sampleWithReplacement<T extends { ovr: number; player: { name: string } }>(
+  pool: T[],
+  count: number,
+): { name: string; ovr: number }[] {
+  const picks: { name: string; ovr: number }[] = [];
+  for (let i = 0; i < count; i++) {
+    const card = pool[Math.floor(Math.random() * pool.length)];
+    picks.push({ name: card.player.name, ovr: card.ovr });
+  }
+  return picks;
+}
+
+/** สุ่มการ์ด `count` ใบจากกลุ่มตำแหน่ง — ขยายช่วง OVR ทีละขั้น (±15% → ±30% → ±50% → ไม่จำกัด) จนกว่าจะเจอการ์ดอย่างน้อย 1 ใบ
+ * การันตีไม่ error ตราบใดที่มีการ์ดกลุ่มตำแหน่งนี้อยู่ในระบบอย่างน้อย 1 ใบ (ดูสเปคหัวข้อ 2) */
+async function pickCardsForGroup(
+  tx: Prisma.TransactionClient,
+  positions: Position[],
+  targetOvr: number,
+  count: number,
+): Promise<{ name: string; ovr: number }[]> {
+  for (const pct of BOT_OVR_RANGE_PCTS) {
+    const pool = await tx.card.findMany({
+      where: {
+        position: { in: positions },
+        ovr: { gte: Math.round(targetOvr * (1 - pct)), lte: Math.round(targetOvr * (1 + pct)) },
+      },
+      include: { player: true },
+    });
+    if (pool.length > 0) return sampleWithReplacement(pool, count);
+  }
+
+  // ไม่จำกัดช่วงเลย — เอาการ์ดที่ OVR ใกล้เคียงเป้าหมายที่สุดในกลุ่มตำแหน่งนี้ทั้งหมด
+  const all = await tx.card.findMany({ where: { position: { in: positions } }, include: { player: true } });
+  if (all.length === 0) throw new Error(`ไม่มีการ์ดกลุ่มตำแหน่งนี้เลยในระบบ: ${positions.join(",")}`);
+  const sorted = [...all].sort((a, b) => Math.abs(a.ovr - targetOvr) - Math.abs(b.ovr - targetOvr));
+  return sampleWithReplacement(sorted.slice(0, Math.max(count, 10)), count);
+}
+
+/** สุ่มทีมบอทเมื่อไม่มีคู่แข่งคนจริงในช่วง rating — formation คงที่ 4-3-3 เสมอสำหรับบอท, ไม่คำนวณ chemistry จริง
+ * (rating บอทตรงๆ จาก OVR เฉลี่ยที่สุ่มได้ ให้ใกล้เคียง targetRating) */
+export async function generateBotSquad(tx: Prisma.TransactionClient, targetRating: number): Promise<Opponent> {
+  const layout = FORMATIONS["4-3-3"];
+  const slotsByGroup = new Map<"GK" | "DEF" | "MID" | "ATT", string[]>();
+  for (const slot of layout) {
+    const group = POSITION_GROUP[slot.pos as Position];
+    const arr = slotsByGroup.get(group) ?? [];
+    arr.push(slot.pos);
+    slotsByGroup.set(group, arr);
+  }
+
+  const lineup: LineupEntry[] = [];
+  for (const [group, slotPositions] of slotsByGroup) {
+    const picks = await pickCardsForGroup(tx, POSITIONS_BY_GROUP[group], targetRating, slotPositions.length);
+    picks.forEach((p, i) => lineup.push({ name: p.name, ovr: p.ovr, slotPos: slotPositions[i] }));
+  }
+
+  const avgOvr = Math.round(lineup.reduce((sum, e) => sum + e.ovr, 0) / lineup.length);
+  return { rating: avgOvr, lineup, isBot: true };
+}
+
+/** หาคู่แข่ง — คนจริงก่อน (squad ที่ cachedRating อยู่ในช่วง ±20% ใช้เป็นแค่ query filter, filled ครบ 11)
+ * ไม่เจอ → fallback บอท ให้ rating ใกล้เคียง myRatingForQuery
+ * สำคัญ: คำนวณ computeChemistry() สดจากข้อมูลจริงเสมอ ไม่ใช้ cachedRating ของคู่แข่งไปคำนวณแมตช์ตรงๆ (ดูสเปคหัวข้อ 3) */
+export async function findOpponent(
+  tx: Prisma.TransactionClient,
+  myUserId: string,
+  myRatingForQuery: number,
+): Promise<Opponent> {
+  const candidates = await tx.squad.findMany({
+    where: {
+      userId: { not: myUserId },
+      cachedRating: {
+        gte: Math.round(myRatingForQuery * 0.8),
+        lte: Math.round(myRatingForQuery * 1.2),
+      },
+    },
+    include: {
+      slots: { orderBy: { index: "asc" }, include: { card: { include: { player: true } } } },
+    },
+  });
+
+  const filled = candidates.filter((s) => s.slots.filter((slot) => slot.cardId !== null).length === 11);
+  if (filled.length === 0) return generateBotSquad(tx, myRatingForQuery);
+
+  const squad = filled[Math.floor(Math.random() * filled.length)];
+  const layout = FORMATIONS[squad.formation] ?? FORMATIONS["4-3-3"];
+  const chem = computeChemistry(buildChemEntries(squad.slots, layout));
+  const lineup = buildLineup(squad.slots, layout);
+
+  return { rating: chem.rating, lineup, isBot: false };
 }
