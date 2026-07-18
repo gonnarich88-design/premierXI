@@ -3,9 +3,13 @@
 
 import { POSITION_GROUP, POSITIONS, type Position } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { computeChemistry } from "@/lib/chemistry";
 import { FORMATIONS } from "@/lib/formations";
-import { buildChemEntries, buildLineup } from "@/lib/squad";
+import { buildChemEntries, buildLineup, getOrCreateSquad } from "@/lib/squad";
+import { dayIndex } from "@/lib/daily";
+import { applyExp, levelReward, addCurrency, spendCurrency, InsufficientFundsError } from "@/lib/economy";
+import { grantFreePack, type LevelUpReward, type OpenedCard } from "@/lib/packs";
 
 export const PVP_TIERS = [
   { key: "bronze", label: "Bronze", min: 0 },
@@ -222,4 +226,271 @@ export async function findOpponent(
   const lineup = buildLineup(squad.slots, layout);
 
   return { rating: chem.rating, lineup, isBot: false };
+}
+
+const FREE_MATCHES_PER_DAY = 5;
+const TICKET_COST_GOLD = 3;
+
+const SEASON_END_REWARD: Record<PvpTierKey, { silver: number; gold: number; freePackId?: string }> = {
+  bronze: { silver: 200, gold: 0 },
+  silver: { silver: 400, gold: 0, freePackId: "standard" },
+  gold: { silver: 600, gold: 3, freePackId: "standard" },
+  elite: { silver: 800, gold: 5, freePackId: "evolution" },
+  champion: { silver: 1000, gold: 8, freePackId: "evolution" },
+  legend: { silver: 1500, gold: 15, freePackId: "royalprime" },
+};
+
+export type SeasonEndReward = {
+  tier: PvpTierKey;
+  silver: number;
+  gold: number;
+  pack?: { packId: string; cards: OpenedCard[] };
+};
+
+export type PvpMatchResult =
+  | {
+      ok: true;
+      myGoals: number;
+      oppGoals: number;
+      events: MatchGoalEvent[];
+      outcome: "win" | "draw" | "lose";
+      isTicketMatch: boolean;
+      isBotOpponent: boolean;
+      expGained: number;
+      silverGained: number;
+      rpDelta: number;
+      rpBefore: number;
+      rpAfter: number;
+      tierBefore: PvpTierKey;
+      tierAfter: PvpTierKey;
+      promoted: boolean;
+      demoted: boolean;
+      leveledUp: boolean;
+      level: number;
+      levelRewards: LevelUpReward[];
+      seasonEndReward?: SeasonEndReward;
+    }
+  | { ok: false; error: string };
+
+/**
+ * เล่นแมตช์ PvP 1 ครั้งแบบ atomic ทั้งหมด — season lazy reset, quota/ticket, matchmaking, simulate, apply reward
+ * ไม่มีพารามิเตอร์ useTicket: isTicketMatch derive จาก pvpMatchesToday ฝั่ง server เสมอ (ดู Global Constraints ข้อ 2)
+ */
+export async function playPvpMatch(userId: string, now: Date = new Date()): Promise<PvpMatchResult> {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        pvpRP: true,
+        pvpSeasonKey: true,
+        pvpWinStreak: true,
+        pvpMatchesToday: true,
+        pvpMatchesDate: true,
+        level: true,
+        exp: true,
+      },
+    });
+
+    // 1. Lazy season check — ก่อนอ่าน pvpRP ไปคำนวณอะไรต่อเสมอ (กันข้าม season boundary กลาง flow)
+    const currentSeasonKey = seasonKey(now);
+    let pvpRP = user.pvpRP;
+    let seasonEndReward: SeasonEndReward | undefined;
+    if (user.pvpSeasonKey !== currentSeasonKey) {
+      if (user.pvpSeasonKey !== null) {
+        const tier = tierForRP(pvpRP);
+        const reward = SEASON_END_REWARD[tier.key];
+        let pack: { packId: string; cards: OpenedCard[] } | undefined;
+        if (reward.freePackId) {
+          const bonus = await grantFreePack(tx, userId, reward.freePackId);
+          pack = { packId: reward.freePackId, cards: bonus.cards };
+        }
+        if (reward.silver > 0) await addCurrency(userId, "silver", reward.silver, tx);
+        if (reward.gold > 0) await addCurrency(userId, "gold", reward.gold, tx);
+        seasonEndReward = { tier: tier.key, silver: reward.silver, gold: reward.gold, pack };
+      }
+      pvpRP = 0;
+      await tx.user.update({ where: { id: userId }, data: { pvpRP: 0, pvpSeasonKey: currentSeasonKey } });
+    }
+
+    // 2. อ่าน Squad ตัวเอง validate ครบ 11 ตำแหน่งก่อนแตะโควตา/ticket
+    // (กันเสียโควตาฟรีหรือ Gold ถ้าทีมยังไม่พร้อม — ดู Global Constraints ข้อ 1)
+    const mySquad = await getOrCreateSquad(userId, tx);
+    const myFilled = mySquad.slots.filter((s) => s.cardId !== null).length;
+    if (myFilled !== 11) {
+      return { ok: false, error: "จัดทีมให้ครบ 11 ตำแหน่งก่อน" };
+    }
+
+    // 3. เช็ค+ตัดโควตาแบบ atomic compare-and-set (เหมือน claimMission() ใน missions.ts)
+    const today = dayIndex(now);
+    const storedDate = user.pvpMatchesDate ? dayIndex(user.pvpMatchesDate) : null;
+    let matchesToday = user.pvpMatchesToday;
+    if (storedDate !== today) {
+      await tx.user.update({ where: { id: userId }, data: { pvpMatchesToday: 0, pvpMatchesDate: now } });
+      matchesToday = 0;
+    }
+
+    let isTicketMatch: boolean;
+    if (matchesToday < FREE_MATCHES_PER_DAY) {
+      isTicketMatch = false;
+      const claim = await tx.user.updateMany({
+        where: { id: userId, pvpMatchesToday: { lt: FREE_MATCHES_PER_DAY } },
+        data: { pvpMatchesToday: { increment: 1 } },
+      });
+      if (claim.count === 0) {
+        return { ok: false, error: "โควตาแมตช์วันนี้เต็มแล้ว ลองใหม่พรุ่งนี้หรือใช้ Match Ticket" };
+      }
+    } else {
+      isTicketMatch = true;
+      try {
+        await spendCurrency(userId, "gold", TICKET_COST_GOLD, tx);
+      } catch (err) {
+        if (err instanceof InsufficientFundsError) {
+          return { ok: false, error: "Gold ไม่พอซื้อ Match Ticket" };
+        }
+        throw err;
+      }
+    }
+
+    // 4. คำนวณ computeChemistry สดของตัวเอง (ไม่ใช้ cachedRating ตรงๆ — ดูสเปคหัวข้อ 3)
+    const layout = FORMATIONS[mySquad.formation] ?? FORMATIONS["4-3-3"];
+    const myRating = computeChemistry(buildChemEntries(mySquad.slots, layout)).rating;
+    const myLineup = buildLineup(mySquad.slots, layout);
+
+    // 5. หาคู่แข่ง + จำลองแมตช์
+    const opponent = await findOpponent(tx, userId, myRating);
+    const match = simulateMatch(myRating, opponent.rating, myLineup, opponent.lineup);
+    const outcome: "win" | "draw" | "lose" =
+      match.myGoals > match.oppGoals ? "win" : match.myGoals < match.oppGoals ? "lose" : "draw";
+
+    // 6. คำนวณรางวัล EXP/Silver/RP + win-streak
+    const mult = rpMultiplier(opponent.rating, myRating);
+    let newWinStreak: number;
+    let expGained: number;
+    let silverGained: number;
+
+    if (outcome === "win") {
+      newWinStreak = user.pvpWinStreak + 1;
+      expGained = Math.round(25 * mult) + winStreakBonus(newWinStreak);
+      silverGained = Math.round(60 * mult);
+    } else if (outcome === "draw") {
+      newWinStreak = user.pvpWinStreak;
+      expGained = 15;
+      silverGained = 35;
+    } else {
+      newWinStreak = 0;
+      expGained = isTicketMatch ? 0 : 8;
+      silverGained = isTicketMatch ? 0 : 15;
+    }
+    const rpDelta = rpDeltaForOutcome(outcome, mult);
+
+    const rpBefore = pvpRP;
+    const rpAfter = Math.max(0, pvpRP + rpDelta);
+
+    // 7. Apply EXP/level + silver + RP + win-streak
+    const { level, exp, levelsGained } = applyExp(user.level, user.exp, expGained);
+    const rewardsByLevel = levelsGained.map((lv) => ({ lv, reward: levelReward(lv) }));
+    const levelSilverBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.silver, 0);
+    const levelGoldBonus = rewardsByLevel.reduce((sum, r) => sum + r.reward.gold, 0);
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        silver: { increment: silverGained + levelSilverBonus },
+        gold: { increment: levelGoldBonus },
+        level,
+        exp,
+        pvpRP: rpAfter,
+        pvpWinStreak: newWinStreak,
+      },
+    });
+
+    const levelRewards: LevelUpReward[] = [];
+    let finalLevel = level;
+    for (const { lv, reward } of rewardsByLevel) {
+      const entry: LevelUpReward = { level: lv, silver: reward.silver, gold: reward.gold };
+      if (reward.freePackId) {
+        const bonus = await grantFreePack(tx, userId, reward.freePackId);
+        entry.pack = { packId: reward.freePackId, cards: bonus.cards };
+        levelRewards.push(entry, ...bonus.levelRewards);
+        finalLevel = bonus.level;
+      } else {
+        levelRewards.push(entry);
+      }
+    }
+
+    const tierBefore = tierForRP(rpBefore).key;
+    const tierAfter = tierForRP(rpAfter).key;
+    const tierOrder = PVP_TIERS.map((t) => t.key);
+    const promoted = tierOrder.indexOf(tierAfter) > tierOrder.indexOf(tierBefore);
+    const demoted = tierOrder.indexOf(tierAfter) < tierOrder.indexOf(tierBefore);
+
+    return {
+      ok: true,
+      myGoals: match.myGoals,
+      oppGoals: match.oppGoals,
+      events: match.events,
+      outcome,
+      isTicketMatch,
+      isBotOpponent: opponent.isBot,
+      expGained,
+      silverGained,
+      rpDelta: rpAfter - rpBefore,
+      rpBefore,
+      rpAfter,
+      tierBefore,
+      tierAfter,
+      promoted,
+      demoted,
+      leveledUp: finalLevel > user.level,
+      level: finalLevel,
+      levelRewards,
+      seasonEndReward,
+    };
+  });
+}
+
+export type PvpStatus = {
+  rp: number;
+  tier: PvpTierKey;
+  tierLabel: string;
+  currentTierMin: number;
+  nextTierMin: number | null;
+  matchesToday: number;
+  matchesRemaining: number;
+  gold: number;
+  squadFilled: number;
+};
+
+/** สถานะหน้า /pvp — read-only เสมอ ไม่ trigger lazy season reset (มีแค่ playPvpMatch ตอนกด "แข่งเลย" เท่านั้นที่ reset จริง) */
+export async function getPvpStatus(userId: string, now: Date): Promise<PvpStatus> {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { pvpRP: true, pvpMatchesToday: true, pvpMatchesDate: true, gold: true },
+  });
+
+  const today = dayIndex(now);
+  const storedDate = user.pvpMatchesDate ? dayIndex(user.pvpMatchesDate) : null;
+  const matchesToday = storedDate === today ? user.pvpMatchesToday : 0;
+
+  const tier = tierForRP(user.pvpRP);
+  const tierIdx = PVP_TIERS.findIndex((t) => t.key === tier.key);
+  const nextTier = PVP_TIERS[tierIdx + 1];
+
+  const squad = await prisma.squad.findUnique({
+    where: { userId },
+    select: { slots: { select: { cardId: true } } },
+  });
+  const squadFilled = squad?.slots.filter((s) => s.cardId !== null).length ?? 0;
+
+  return {
+    rp: user.pvpRP,
+    tier: tier.key,
+    tierLabel: tier.label,
+    currentTierMin: tier.min,
+    nextTierMin: nextTier ? nextTier.min : null,
+    matchesToday,
+    matchesRemaining: Math.max(0, FREE_MATCHES_PER_DAY - matchesToday),
+    gold: user.gold,
+    squadFilled,
+  };
 }
