@@ -40,6 +40,13 @@ export default async function ProfilePage() {
         ดูคลังการ์ดทั้งหมด
       </Link>
 
+      <Link
+        href="/achievements"
+        className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+      >
+        Achievement
+      </Link>
+
       {user.isAdmin && (
         <Link
           href="/admin/news"
