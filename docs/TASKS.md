@@ -116,12 +116,12 @@
 สเปคที่ `docs/superpowers/specs/2026-07-20-fantasy-design.md` — แบ่ง 4 sub-phase ทั้งหมดอยู่ใน scope นี้ (ไม่ตัดอะไรออก)
 
 ### ขั้น 7A — Core squad + snapshot
-- [ ] Prisma schema: `Gameweek`/`Match`/`PlayerMatchStat`/`FantasyEntry`/`FantasyEntrySlot`/`FantasyGameweekScore`/`FantasyRewardGrant`/`FantasySettlement` + migrate
-- [ ] `fantasyConfig.ts` (ตารางคะแนน/squad quota/formation min/reward config)
-- [ ] Service จัดทีม: validate ownership (`UserCard`), กัน `playerId` ซ้ำข้าม tier, การ์ดต้องตรง position group ของ slot, captain≠vice-captain ต้องอยู่ใน starting XI
-- [ ] Snapshot ทีมแยกต่อ Gameweek ตั้งแต่ตอน save (`now < deadline` เป็นเงื่อนไขใน transaction) + clone จาก entry ล่าสุดตอนเริ่ม GW ใหม่
-- [ ] หน้าจัดทีม Fantasy (สนาม 11 ตัวจริง + bench 4 + badge C/VC) mobile-first
-- [ ] Test: pure validation ครบเงื่อนไข + concurrent save-at-deadline
+- [x] Prisma schema: `Gameweek`/`Match`/`PlayerMatchStat`/`FantasyEntry`/`FantasyEntrySlot`/`FantasyGameweekScore`/`FantasyRewardGrant`/`FantasySettlement` + migrate
+- [x] `fantasyConfig.ts` (ตารางคะแนน/squad quota/formation min/reward config)
+- [x] Service จัดทีม: validate ownership (`UserCard`), กัน `playerId` ซ้ำข้าม tier, การ์ดต้องตรง position group ของ slot, captain≠vice-captain ต้องอยู่ใน starting XI
+- [x] Snapshot ทีมแยกต่อ Gameweek ตั้งแต่ตอน save (`now < deadline` เป็นเงื่อนไขใน transaction) + clone จาก entry ล่าสุดตอนเริ่ม GW ใหม่
+- [x] หน้าจัดทีม Fantasy (สนาม 11 ตัวจริง + bench 4 + badge C/VC) mobile-first
+- [x] Test: pure validation ครบเงื่อนไข + concurrent save-at-deadline
 
 ### ขั้น 7B — Admin กรอกผล + คิดคะแนน (MVP ที่ต้อง ship ก่อน)
 - [ ] Admin: สร้าง Gameweek (deadline + derive `monthKey` freeze) + สร้าง Match ทีละคู่ + กรอกสถิติผูกกับแมตช์ (เสียประตู/คลีนชีต derive จากสกอร์อัตโนมัติ)
