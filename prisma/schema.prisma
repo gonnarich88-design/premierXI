@@ -72,6 +72,9 @@ model User {
   announcements       Announcement[] @relation("AnnouncementAuthor")
   missionProgress     MissionProgress[]
   achievementProgress AchievementProgress[]
+  fantasyEntries      FantasyEntry[]
+  fantasyScores       FantasyGameweekScore[]
+  fantasyRewards      FantasyRewardGrant[]
 }
 
 /// นักเตะจริง (ตัวตนของนักเตะ 1 คน — หนึ่งคนมีได้หลายการ์ด/หลายเวอร์ชัน)
@@ -83,8 +86,10 @@ model Player {
   league   String @default("Premier League")
   position String // ตำแหน่งหลัก (ดู POSITIONS ใน constants)
 
-  cards     Card[]
-  createdAt DateTime @default(now())
+  cards        Card[]
+  matchStats   PlayerMatchStat[]
+  fantasySlots FantasyEntrySlot[]
+  createdAt    DateTime           @default(now())
 }
 
 /// การ์ด = เวอร์ชันหนึ่งของนักเตะ (เช่น Salah Gold, Salah TOTW) พร้อมค่าพลัง
@@ -115,9 +120,10 @@ model Card {
   imageUrl  String?
   isStarter Boolean @default(false) // ใช้ในกล่อง Starter Pack ได้หรือไม่
 
-  owners     UserCard[]
-  squadSlots SquadSlot[]
-  createdAt  DateTime   @default(now())
+  owners       UserCard[]
+  squadSlots   SquadSlot[]
+  fantasySlots FantasyEntrySlot[]
+  createdAt    DateTime           @default(now())
 
   @@index([tier])
   @@index([category])
@@ -232,4 +238,158 @@ model AchievementProgress {
 
   @@unique([userId, achievementKey])
   @@index([userId])
+}
+
+/// Gameweek — รอบการแข่งขัน Fantasy (1 สัปดาห์) — ดู docs/superpowers/specs/2026-07-20-fantasy-design.md
+model Gameweek {
+  id       String   @id @default(cuid())
+  number   Int      @unique
+  deadline DateTime
+  monthKey String   // "YYYY-MM" UTC — derive จาก deadline ตอนสร้าง แล้ว freeze (ห้ามใช้วันที่ปิด)
+  status   String   @default("UPCOMING") // UPCOMING | LOCKED | SCORING | SCORED
+
+  scoringStartedAt DateTime?
+  scoredAt         DateTime?
+
+  matches Match[]
+  entries FantasyEntry[]
+  scores  FantasyGameweekScore[]
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([monthKey])
+}
+
+/// แมตช์จริงใน Gameweek (admin กรอก — ยังไม่ implement ใน 7A)
+model Match {
+  id         String   @id @default(cuid())
+  gameweekId String
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
+
+  homeClub  String
+  awayClub  String
+  homeScore Int?
+  awayScore Int?
+  kickoffAt DateTime?
+  status    String   @default("SCHEDULED") // SCHEDULED | PLAYED | POSTPONED | CANCELLED
+
+  providerFixtureId String? @unique // จาก API-Football — กัน sync ซ้ำ (Phase 7D)
+
+  stats PlayerMatchStat[]
+
+  @@index([gameweekId])
+}
+
+/// สถิติรายนักเตะต่อแมตช์ (admin กรอก — ยังไม่ implement ใน 7A)
+model PlayerMatchStat {
+  id       String @id @default(cuid())
+  matchId  String
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  clubSide String // HOME | AWAY — freeze ตอนกรอก ไม่ derive จาก Player.club สด
+
+  minutes  Int @default(0)
+  goals    Int @default(0)
+  assists  Int @default(0)
+  yellow   Int @default(0)
+  red      Int @default(0)
+  ownGoals Int @default(0)
+
+  @@unique([matchId, playerId])
+  @@index([playerId])
+}
+
+/// ทีม Fantasy ของ user สำหรับ Gameweek หนึ่งๆ — immutable หลัง deadline (เขียนที่ตอน save เท่านั้น)
+model FantasyEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameweekId String
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
+
+  formation   String
+  submittedAt DateTime? // null = clone อัตโนมัติ ยังไม่กด save เอง → ไม่มีสิทธิ์รับรางวัล (7B)
+  updatedAt   DateTime  @updatedAt
+
+  slots FantasyEntrySlot[]
+
+  @@unique([userId, gameweekId])
+  @@index([gameweekId])
+}
+
+/// ช่องในทีม Fantasy (0-10 ตัวจริง, 11-14 สำรอง) — freeze ข้อมูลที่ใช้คิดคะแนนภายหลัง
+model FantasyEntrySlot {
+  id      String       @id @default(cuid())
+  entryId String
+  entry   FantasyEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  cardId   String
+  card     Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  playerId String // freeze — ใช้ join กับ PlayerMatchStat ตอนคิดคะแนน (7B)
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  fantasyPositionGroup String // GK | DEF | MID | ATT — freeze ตอน save ห้าม derive สด
+
+  slotIndex     Int     // 0-10 = ตัวจริง, 11-14 = สำรอง
+  isStarter     Boolean
+  benchPriority Int? // 1-4 สำหรับตัวสำรองเท่านั้น
+  isCaptain     Boolean @default(false)
+  isViceCaptain Boolean @default(false)
+
+  @@unique([entryId, slotIndex])
+  @@unique([entryId, cardId])
+  @@index([playerId])
+}
+
+/// คะแนนที่คำนวณแล้วของ user ต่อ Gameweek + อันดับ (คำนวณจริงใน 7B)
+model FantasyGameweekScore {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameweekId String
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
+
+  points     Int
+  rank       Int?
+  rewardTier String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, gameweekId])
+  @@index([gameweekId, points])
+}
+
+/// Ledger การแจกรางวัล — unique กันแจกซ้ำตอน retry/resume (ใช้จริงใน 7B/7C)
+model FantasyRewardGrant {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  periodType String // WEEKLY | MONTHLY
+  periodKey  String // weekly: gameweekId / monthly: "YYYY-MM"
+  rewardType String // SILVER | GOLD | PACK
+
+  amount Int?
+  packId String?
+
+  grantedAt DateTime @default(now())
+
+  @@unique([userId, periodType, periodKey, rewardType])
+  @@index([periodType, periodKey])
+}
+
+/// Global claim record ของ monthly settlement (ใช้จริงใน 7C)
+model FantasySettlement {
+  id         String @id @default(cuid())
+  periodType String
+  periodKey  String
+
+  status      String    @default("PENDING") // PENDING | PROCESSING | COMPLETED
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@unique([periodType, periodKey])
 }
