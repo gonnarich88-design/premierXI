@@ -129,3 +129,67 @@ export async function getOrCreateEntry(userId: string, gameweekId: string) {
     include: entryInclude,
   });
 }
+
+/** บันทึกทีม Fantasy ทั้งทีมของ Gameweek นี้ — validate ownership + deadline + เนื้อทีมทั้งหมดก่อนเขียน
+ * ดู docs/superpowers/specs/2026-07-20-fantasy-design.md หัวข้อ 1-2 */
+export async function saveEntry(
+  userId: string,
+  gameweekId: string,
+  formation: string,
+  lineup: LineupInput[],
+  now: Date = new Date(),
+): Promise<void> {
+  if (!(formation in FORMATIONS)) throw new Error("ไม่พบ formation นี้");
+  const layout = FORMATIONS[formation];
+
+  const gameweek = await prisma.gameweek.findUnique({ where: { id: gameweekId } });
+  if (!gameweek) throw new Error("ไม่พบ Gameweek นี้");
+  if (now >= gameweek.deadline) throw new Error("พ้นเวลาปิดทีมของ Gameweek นี้แล้ว");
+
+  const cardIds = lineup.map((l) => l.cardId);
+  const owned = await prisma.userCard.findMany({
+    where: { userId, cardId: { in: cardIds } },
+    select: { cardId: true, card: { select: { playerId: true, position: true } } },
+  });
+  const ownedMap = new Map(owned.map((o) => [o.cardId, o.card]));
+
+  const enriched: EnrichedEntry[] = lineup.map((l) => {
+    const card = ownedMap.get(l.cardId);
+    if (!card) throw new Error("ไม่ได้เป็นเจ้าของการ์ดบางใบในทีม");
+    return {
+      ...l,
+      playerId: card.playerId,
+      positionGroup: POSITION_GROUP[card.position as Position],
+    };
+  });
+
+  const result = validateLineup(enriched, formation);
+  if (!result.ok) throw new Error(result.error);
+
+  await prisma.$transaction(async (tx) => {
+    // เช็ค deadline ซ้ำในทรานแซกชัน (defense in depth กันข้อมูลเปลี่ยนระหว่างเช็คครั้งแรกกับตอนเขียนจริง)
+    const fresh = await tx.gameweek.findUnique({ where: { id: gameweekId } });
+    if (!fresh || now >= fresh.deadline) throw new Error("พ้นเวลาปิดทีมของ Gameweek นี้แล้ว");
+
+    const entry = await tx.fantasyEntry.upsert({
+      where: { userId_gameweekId: { userId, gameweekId } },
+      update: { formation, submittedAt: now },
+      create: { userId, gameweekId, formation, submittedAt: now },
+    });
+
+    await tx.fantasyEntrySlot.deleteMany({ where: { entryId: entry.id } });
+    await tx.fantasyEntrySlot.createMany({
+      data: enriched.map((e) => ({
+        entryId: entry.id,
+        cardId: e.cardId,
+        playerId: e.playerId,
+        fantasyPositionGroup: e.positionGroup,
+        slotIndex: e.slotIndex,
+        isStarter: e.slotIndex < layout.length,
+        benchPriority: e.slotIndex >= layout.length ? e.slotIndex - layout.length + 1 : null,
+        isCaptain: e.isCaptain,
+        isViceCaptain: e.isViceCaptain,
+      })),
+    });
+  });
+}
