@@ -1,0 +1,179 @@
+// Premier XI — database schema (generated)
+// สร้างอัตโนมัติจาก database จริงด้วย `npm run db:dbml` — ห้ามแก้ไฟล์นี้ด้วยมือ
+// Provider: sqlite
+
+Table AchievementProgress {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  achievementKey TEXT [not null]
+  claimed BOOLEAN [not null, default: `false`]
+  claimedAt DATETIME
+
+  indexes {
+    (userId, achievementKey) [unique, name: 'AchievementProgress_userId_achievementKey_key']
+    userId [name: 'AchievementProgress_userId_idx']
+  }
+}
+
+Table Announcement {
+  id TEXT [pk]
+  title TEXT [not null]
+  body TEXT [not null]
+  published BOOLEAN [not null, default: `true`]
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  authorId TEXT [ref: > User.id]
+
+  indexes {
+    (published, createdAt) [name: 'Announcement_published_createdAt_idx']
+  }
+}
+
+Table Card {
+  id TEXT [pk]
+  playerId TEXT [not null, ref: > Player.id]
+  tier TEXT [not null]
+  category TEXT [not null, default: `'normal'`]
+  position TEXT [not null]
+  ovr INTEGER [not null]
+  pace INTEGER [not null]
+  shooting INTEGER [not null]
+  passing INTEGER [not null]
+  dribbling INTEGER [not null]
+  defending INTEGER [not null]
+  physical INTEGER [not null]
+  altPositions TEXT
+  foot TEXT
+  skillMoves INTEGER
+  weakFoot INTEGER
+  indexRating REAL
+  imageUrl TEXT
+  isStarter BOOLEAN [not null, default: `false`]
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    category [name: 'Card_category_idx']
+    tier [name: 'Card_tier_idx']
+  }
+}
+
+Table MissionProgress {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  missionKey TEXT [not null]
+  periodKey TEXT [not null]
+  progress INTEGER [not null, default: `0`]
+  claimed BOOLEAN [not null, default: `false`]
+  updatedAt DATETIME [not null]
+
+  indexes {
+    (userId, missionKey, periodKey) [unique, name: 'MissionProgress_userId_missionKey_periodKey_key']
+    (userId, periodKey) [name: 'MissionProgress_userId_periodKey_idx']
+  }
+}
+
+Table Notification {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  type TEXT [not null]
+  title TEXT [not null]
+  body TEXT
+  href TEXT
+  read BOOLEAN [not null, default: `false`]
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (userId, createdAt) [name: 'Notification_userId_createdAt_idx']
+    (userId, read) [name: 'Notification_userId_read_idx']
+  }
+}
+
+Table Player {
+  id TEXT [pk]
+  name TEXT [not null]
+  club TEXT [not null]
+  nation TEXT [not null]
+  league TEXT [not null, default: `'Premier League'`]
+  position TEXT [not null]
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table Squad {
+  id TEXT [pk]
+  userId TEXT [not null, unique, ref: > User.id]
+  formation TEXT [not null, default: `'4-3-3'`]
+  updatedAt DATETIME [not null]
+  cachedRating INTEGER [not null, default: `0`]
+
+  indexes {
+    cachedRating [name: 'Squad_cachedRating_idx']
+  }
+}
+
+Table SquadSlot {
+  id TEXT [pk]
+  squadId TEXT [not null, ref: > Squad.id]
+  index INTEGER [not null]
+  cardId TEXT [ref: > Card.id]
+
+  indexes {
+    (squadId, index) [unique, name: 'SquadSlot_squadId_index_key']
+  }
+}
+
+Table User {
+  id TEXT [pk]
+  username TEXT [not null, unique]
+  phone TEXT [not null, unique]
+  passwordHash TEXT [not null]
+  isAdmin BOOLEAN [not null, default: `false`]
+  level INTEGER [not null, default: `1`]
+  exp INTEGER [not null, default: `0`]
+  silver INTEGER [not null, default: `0`]
+  gold INTEGER [not null, default: `0`]
+  packTicket INTEGER [not null, default: `0`]
+  shards INTEGER [not null, default: `0`]
+  evoShards INTEGER [not null, default: `0`]
+  primeShards INTEGER [not null, default: `0`]
+  pityCounter INTEGER [not null, default: `0`]
+  loginStreak INTEGER [not null, default: `0`]
+  lastClaimDate DATETIME
+  totalLogins INTEGER [not null, default: `0`]
+  starterClaimed BOOLEAN [not null, default: `false`]
+  evoMilestoneClaimed BOOLEAN [not null, default: `false`]
+  primeMilestoneClaimed BOOLEAN [not null, default: `false`]
+  hasDeposited BOOLEAN [not null, default: `false`]
+  lastReadNewsAt DATETIME
+  pvpRP INTEGER [not null, default: `0`]
+  pvpSeasonKey TEXT
+  pvpWinStreak INTEGER [not null, default: `0`]
+  pvpMatchesToday INTEGER [not null, default: `0`]
+  pvpMatchesDate DATETIME
+  totalPacksOpened INTEGER [not null, default: `0`]
+  pvpTotalWins INTEGER [not null, default: `0`]
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  lastLoginAt DATETIME
+}
+
+Table UserCard {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  cardId TEXT [not null, ref: > Card.id]
+  acquiredAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (userId, cardId) [unique, name: 'UserCard_userId_cardId_key']
+    userId [name: 'UserCard_userId_idx']
+  }
+}
+
+// --- Foreign key actions (อ้างอิง, DBML ไม่เก็บ on delete/update ใน inline ref) ---
+// AchievementProgress.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// Announcement.authorId -> User.id (on delete: SET NULL, on update: CASCADE)
+// Card.playerId -> Player.id (on delete: CASCADE, on update: CASCADE)
+// MissionProgress.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// Notification.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// Squad.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// SquadSlot.squadId -> Squad.id (on delete: CASCADE, on update: CASCADE)
+// SquadSlot.cardId -> Card.id (on delete: SET NULL, on update: CASCADE)
+// UserCard.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// UserCard.cardId -> Card.id (on delete: CASCADE, on update: CASCADE)

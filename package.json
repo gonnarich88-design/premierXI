@@ -11,6 +11,7 @@
     "db:import": "tsx prisma/import-cards.ts",
     "db:import-special": "tsx prisma/import-special-cards.ts",
     "db:generate-achievement-clubs": "tsx prisma/generate-achievement-clubs.ts",
+    "db:dbml": "tsx prisma/generate-dbml.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "prisma": {
