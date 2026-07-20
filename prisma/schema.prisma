@@ -58,14 +58,20 @@ model User {
   pvpMatchesToday Int       @default(0)
   pvpMatchesDate  DateTime? // เทียบ dayIndex() เหมือน daily.ts เพื่อรีเซ็ตโควตารายวัน
 
+  // Achievement (category "activity") — lifetime counter เริ่มนับ 0 ตั้งแต่ deploy ระบบนี้ ไม่ backfill ย้อนหลัง
+  // ดู docs/superpowers/specs/2026-07-20-achievement-collection-design.md Non-goals
+  totalPacksOpened Int @default(0) // นับเฉพาะ openPack()/openPackWithShards() ที่ user กดเอง — ห้ามนับ starter/free pack จาก milestone อื่น
+  pvpTotalWins     Int @default(0) // นับชนะสะสมตลอดกาล (ต่างจาก pvpWinStreak ที่รีเซ็ตเมื่อแพ้)
+
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
 
-  cards            UserCard[]
-  squad            Squad?
-  notifications    Notification[]
-  announcements    Announcement[] @relation("AnnouncementAuthor")
-  missionProgress  MissionProgress[]
+  cards               UserCard[]
+  squad               Squad?
+  notifications       Notification[]
+  announcements       Announcement[] @relation("AnnouncementAuthor")
+  missionProgress     MissionProgress[]
+  achievementProgress AchievementProgress[]
 }
 
 /// นักเตะจริง (ตัวตนของนักเตะ 1 คน — หนึ่งคนมีได้หลายการ์ด/หลายเวอร์ชัน)
@@ -208,4 +214,22 @@ model MissionProgress {
 
   @@unique([userId, missionKey, periodKey])
   @@index([userId, periodKey])
+}
+
+/// สถานะเคลม Achievement — ตัวเดียว generic ใช้ร่วมทุกหมวด (activity/club/meta)
+/// progress ไม่เก็บในตารางนี้ — คำนวณสดเสมอจาก User counter (activity) หรือ UserCard join (club/meta)
+/// achievementKey ต้องมาจาก ACHIEVEMENTS ใน src/lib/achievementConfig.ts เท่านั้น
+/// row จะถูกสร้างก็ต่อเมื่อเคลมสำเร็จเท่านั้น (ไม่มี "progress row" สร้างล่วงหน้าเหมือน MissionProgress)
+model AchievementProgress {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  achievementKey String
+
+  claimed   Boolean   @default(false)
+  claimedAt DateTime?
+
+  @@unique([userId, achievementKey])
+  @@index([userId])
 }
