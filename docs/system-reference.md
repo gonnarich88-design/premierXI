@@ -1,6 +1,6 @@
 # Premier XI — System Reference
 
-เอกสารอ้างอิงโครงสร้างระบบ สร้างจากโค้ดจริงใน repository วันที่ 2026-07-15 อัปเดตล่าสุด 2026-07-16 (Pack redesign + Launch promotion) ใช้สำหรับอ่านก่อนแก้ไข/ต่อเติม feature ใด ๆ
+เอกสารอ้างอิงโครงสร้างระบบ สร้างจากโค้ดจริงใน repository วันที่ 2026-07-15 อัปเดตล่าสุด 2026-07-20 (Mission + PvP + Achievement) ใช้สำหรับอ่านก่อนแก้ไข/ต่อเติม feature ใด ๆ
 
 ---
 
@@ -27,6 +27,9 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 - จัดทีม 11 คน (`/team`) พร้อม formation, chemistry, rating
 - เช็คอินรายวัน (`DailyClaim` ในหน้า `/`)
 - Notification Center (`/notifications`) + Announcement admin (`/admin/news`)
+- Mission รายวัน/รายสัปดาห์ (`MissionList` ในหน้า `/`) — 3 daily + 2 weekly กดรับรางวัลเอง
+- PvP (`/pvp`) — matchmaking ผู้เล่น/บอท, simulate สกอร์, RP + 6 tier, season รายเดือน, ฟรี 5 แมตช์/วัน
+- Achievement + Collection rewards (`/achievements`) — 31 รายการ (10 activity + 20 club + 1 meta)
 
 ---
 
@@ -36,15 +39,20 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 .
 ├── docs/
 │   ├── TASKS.md                 # แผนงานทั้งหมด (checklist)
-│   ├── progress.md              # สรุปความคืบหน้า
-│   └── system-reference.md      # เอกสารฉบับนี้
+│   ├── progress.md              # สรุปสถานะ + งานที่ค้าง
+│   ├── game-guide.md            # กลไกเกม/ตัวเลข balance (source of truth ของตัวเลข)
+│   ├── system-reference.md      # เอกสารฉบับนี้
+│   └── superpowers/specs/       # สเปคดีไซน์รายฟีเจอร์ (mission/pvp/achievement/chemistry)
 ├── prisma/
 │   ├── schema.prisma            # Database schema
 │   ├── import-cards.ts          # Script import การ์ด normal จากรูป + JSON (20 ทีม)
 │   ├── import-special-cards.ts  # Script import การ์ด Evolution/Royal Prime (ไม่มีโฟลเดอร์ทีมย่อย)
+│   ├── generate-achievement-clubs.ts # Gen club achievement catalog → data/achievements/club-collection.json
+│   ├── generate-dbml.ts         # Gen database.dbml จาก SQLite schema จริง
 │   ├── dev.db                   # SQLite database
 │   └── migrations/              # Migration files
 ├── data/extracted/              # JSON ข้อมูลการ์ด 20 ทีม + evolution.json + royalprime.json
+├── data/achievements/           # club-collection.json (catalog achievement รายสโมสร)
 ├── public/card/normal/          # รูปการ์ด PNG จริง 20 ทีม
 ├── public/card/evolution/       # รูปการ์ด Evolution 44 ใบ (flat, ไม่มีโฟลเดอร์ทีมย่อย)
 ├── public/card/royalprime/      # รูปการ์ด Royal Prime 44 ใบ (flat, ไม่มีโฟลเดอร์ทีมย่อย)
@@ -59,7 +67,8 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 │   │   ├── team/page.tsx        # จัดทีม
 │   │   ├── collection/page.tsx  # คลังการ์ด
 │   │   ├── pack/page.tsx        # เปิดซอง
-│   │   ├── pvp/page.tsx         # PvP placeholder
+│   │   ├── pvp/page.tsx         # PvP (ใช้งานจริงแล้ว)
+│   │   ├── achievements/page.tsx # Achievement + Collection rewards
 │   │   ├── notifications/page.tsx # Notification center
 │   │   ├── admin/news/page.tsx  # Admin จัดการข่าว
 │   │   └── actions/             # Server Actions
@@ -68,14 +77,20 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 │   │       ├── pack.ts
 │   │       ├── squad.ts
 │   │       ├── starter.ts
+│   │       ├── missions.ts
+│   │       ├── pvp.ts
+│   │       ├── achievements.ts
 │   │       └── notifications.ts
 │   ├── components/
 │   │   ├── AuthForm.tsx
 │   │   ├── AppHeader.tsx
 │   │   ├── BottomNav.tsx
 │   │   ├── DailyClaim.tsx
+│   │   ├── MissionList.tsx
 │   │   ├── PackShop.tsx
 │   │   ├── PlayerCard.tsx
+│   │   ├── PvpMatch.tsx
+│   │   ├── AchievementList.tsx
 │   │   ├── StarterPackModal.tsx
 │   │   └── TeamBuilder.tsx
 │   └── lib/
@@ -89,14 +104,21 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 │       ├── economy.ts           # Add/spend currency + EXP/level up
 │       ├── formations.ts        # Formation definitions + slot coordinates
 │       ├── notifications.ts     # Notification center logic
-│       ├── packs.ts             # Pack config + open pack RNG + pity
+│       ├── packs.ts             # Pack config + open pack RNG + shard exchange
 │       ├── prisma.ts            # PrismaClient singleton
 │       ├── squad.ts             # Squad CRUD
-│       └── starter.ts           # Starter pack distribution
+│       ├── starter.ts           # Starter pack distribution
+│       ├── missionConfig.ts     # Catalog มิชชั่น (3 daily + 2 weekly)
+│       ├── missionPeriod.ts     # periodKey รายวัน/รายสัปดาห์
+│       ├── missions.ts          # Mission progress + claim
+│       ├── pvp.ts               # Matchmaking + simulate + RP/tier/season
+│       ├── achievementConfig.ts # Catalog achievement 31 รายการ
+│       └── achievements.ts      # Achievement progress (คำนวณสด) + claim
 ├── next.config.ts               # Preview proxy origin allowlist
+├── database.dbml                # Schema ที่ gen จาก SQLite จริง (npm run db:dbml)
 ├── package.json
 ├── tsconfig.json
-└── gdd.txt                      # Game Design Document
+└── gdd.md                       # Game Design Document
 ```
 
 ---
@@ -263,20 +285,55 @@ Indexes: `@@index([userId, read])`, `@@index([userId, createdAt])`
 
 Index: `@@index([published, createdAt])`
 
+### 3.9 `MissionProgress`
+
+ความคืบหน้ามิชชั่นรายรอบ — ตารางเดียว generic ใช้ร่วมทุกมิชชั่น (catalog อยู่ในโค้ด ไม่ใช่ DB) เพิ่มมิชชั่นใหม่จึงไม่ต้อง migrate
+
+| Field | Type | Default | หมายเหตุ |
+|---|---|---|---|
+| `id` | `String` | `cuid()` | PK |
+| `userId` | `String` | - | FK → User (cascade) |
+| `missionKey` | `String` | - | จาก `MISSION_KEYS` เท่านั้น |
+| `periodKey` | `String` | - | daily = epoch-day / weekly = epoch-week (ดู `missionPeriod.ts`) |
+| `progress` | `Int` | `0` | - |
+| `claimed` | `Boolean` | `false` | - |
+| `updatedAt` | `DateTime` | `@updatedAt` | - |
+
+Constraints: `@@unique([userId, missionKey, periodKey])` · Index: `@@index([userId, periodKey])`
+
+> โตแบบ unbounded (1 แถว/มิชชั่น/รอบ/ผู้เล่น) — ยังไม่มี pruning ดู `docs/progress.md` หัวข้อหนี้ทางเทคนิค
+
+### 3.10 `AchievementProgress`
+
+สถานะ **เคลม** achievement — ตัวเดียว generic ใช้ร่วมทุกหมวด (activity/club/meta)
+
+| Field | Type | Default | หมายเหตุ |
+|---|---|---|---|
+| `id` | `String` | `cuid()` | PK |
+| `userId` | `String` | - | FK → User (cascade) |
+| `achievementKey` | `String` | - | จาก `ACHIEVEMENTS` เท่านั้น |
+| `claimed` | `Boolean` | `false` | - |
+| `claimedAt` | `DateTime?` | - | - |
+
+Constraints: `@@unique([userId, achievementKey])` · Index: `@@index([userId])`
+
+> **ต่างจาก `MissionProgress` 2 จุด:** (1) ไม่เก็บ `progress` — คำนวณสดเสมอจาก `User` counter (activity) หรือ join `UserCard` (club/meta) (2) row ถูกสร้างก็ต่อเมื่อ **เคลมสำเร็จ** เท่านั้น ไม่มี progress row สร้างล่วงหน้า — `@@unique` จึงทำหน้าที่กันเคลมซ้ำแบบ atomic (ชน P2002)
+
 ---
 
 ## 4. Routes / Pages
 
 | Route | File | ประเภท | Login required | Admin only | Server Actions ที่ใช้ |
 |---|---|---|---|---|---|
-| `/` | `src/app/page.tsx` | Page | No | No | `devLoginAction`, `resetTestUserAction` |
+| `/` | `src/app/page.tsx` | Page | No | No | `devLoginAction`, `resetTestUserAction`, `claimDailyAction`, `claimMissionAction` |
 | `/login` | `src/app/login/page.tsx` | Page | Redirect ถ้า login | No | `loginAction`, `devLoginAction`, `resetTestUserAction` |
 | `/register` | `src/app/register/page.tsx` | Page | Redirect ถ้า login | No | `registerAction` |
 | `/profile` | `src/app/profile/page.tsx` | Page | Yes | No | `logoutAction` |
 | `/team` | `src/app/team/page.tsx` | Page | No | No | `setFormationAction`, `assignSlotAction` |
 | `/collection` | `src/app/collection/page.tsx` | Page | Yes | No | - |
 | `/pack` | `src/app/pack/page.tsx` | Page | Yes | No | - |
-| `/pvp` | `src/app/pvp/page.tsx` | Page | No | No | - |
+| `/pvp` | `src/app/pvp/page.tsx` | Page | Yes (redirect `/login`) | No | `playPvpMatchAction` |
+| `/achievements` | `src/app/achievements/page.tsx` | Page | Yes (redirect `/login`) | No | `claimAchievementAction` |
 | `/notifications` | `src/app/notifications/page.tsx` | Page | Yes | No | - |
 | `/admin/news` | `src/app/admin/news/page.tsx` | Page | Yes | Yes | `createAnnouncementAction`, `toggleAnnouncementAction`, `deleteAnnouncementAction` |
 
@@ -346,6 +403,26 @@ Validation rules:
 
 ทั้งสามตัวตรวจสอบ `isAdmin` ผ่าน `requireAdmin()`
 
+### 5.7 `src/app/actions/missions.ts`
+
+| Export | Signature | บทบาท |
+|---|---|---|
+| `claimMissionAction` | `(missionKey: string) => Promise<ClaimMissionResult>` | เคลมรางวัลมิชชั่น, สร้าง notification `MISSION_CLAIMED` + `LEVEL_UP` ถ้าเลเวลอัพ |
+
+### 5.8 `src/app/actions/pvp.ts`
+
+| Export | Signature | บทบาท |
+|---|---|---|
+| `playPvpMatchAction` | `() => Promise<PvpMatchResult>` | เล่น PvP 1 แมตช์, สร้าง notification `PVP_MATCH` / season end / `LEVEL_UP` |
+
+> ไม่มีพารามิเตอร์ `useTicket` — `isTicketMatch` derive ฝั่ง server จาก `pvpMatchesToday` เสมอ ไม่รับ input จาก client
+
+### 5.9 `src/app/actions/achievements.ts`
+
+| Export | Signature | บทบาท |
+|---|---|---|
+| `claimAchievementAction` | `(achievementKey: string) => Promise<ClaimAchievementResult>` | เคลมรางวัล achievement, สร้าง notification `ACHIEVEMENT_UNLOCKED` + `LEVEL_UP` ถ้าเลเวลอัพ |
+
 ---
 
 ## 6. Components
@@ -404,6 +481,27 @@ Validation rules:
 - เรียก `setFormationAction`, `assignSlotAction`
 - Import จาก lib: `POSITION_GROUP`, `Position`, `MAX_TEAM_CHEM`
 - แสดงสนาม, เปลี่ยน formation, เปิด bottom sheet เลือกการ์ด
+
+### 6.9 `src/components/MissionList.tsx`
+
+- Type: Client component
+- Props: `{ missions: MissionStatus[] }`
+- เรียก `claimMissionAction`
+- แสดงในหน้า `/` — progress bar ต่อมิชชั่น + ปุ่มรับรางวัล (เปิดเมื่อ `progress >= target` และยังไม่ `claimed`)
+
+### 6.10 `src/components/PvpMatch.tsx`
+
+- Type: Client component
+- Props: `{ status: PvpStatus }`
+- เรียก `playPvpMatchAction`
+- แสดง RP/tier ปัจจุบัน, โควตาแมตช์ที่เหลือวันนี้, ปุ่มแข่ง (เป็น ticket match อัตโนมัติเมื่อโควตาฟรีหมด) แล้ว render สกอร์ + goal events + RP ที่ได้/เสีย
+
+### 6.11 `src/components/AchievementList.tsx`
+
+- Type: Client component
+- Props: `{ achievements: AchievementStatus[] }`
+- State: `Tab = "activity" | "collection"` (แท็บ collection รวม category `club` + `meta`)
+- เรียก `claimAchievementAction` — แสดง chip รางวัล Silver/Gold/ซองฟรี ต่อรายการ
 
 ---
 
@@ -743,6 +841,11 @@ Algorithm `pickStarterCardIds`:
 | Export | Signature | รายละเอียด |
 |---|---|---|
 | `createNotification` | `(input: {userId, type, title, body?, href?})` | สร้าง Notification แบบ best-effort (catch ไม่ throw) |
+| `notifyLevelRewards` | `(userId, level, levelRewards)` | สรุปรางวัล level-up เป็น noti `LEVEL_UP` — ใช้ร่วมกันทุก action ที่ให้ EXP |
+| `notifyMissionClaimed` | `(userId, result)` | noti `MISSION_CLAIMED` |
+| `notifyPvpMatch` | `(userId, result)` | noti `PVP_MATCH` (สกอร์ + RP) |
+| `notifyPvpSeasonEnd` | `(userId, reward)` | noti รางวัลจบ season |
+| `notifyAchievementUnlocked` | `(userId, result)` | noti `ACHIEVEMENT_UNLOCKED` |
 | `getUnreadCount` | `(userId: string): Promise<number>` | `unreadNotifs + unreadNews` |
 | `NotificationItem` | type | - |
 | `NewsItem` | type | - |
@@ -753,6 +856,100 @@ Algorithm `pickStarterCardIds`:
 
 - `unreadNotifs = count Notification where userId, read=false`
 - `unreadNews = count Announcement where published=true, createdAt > lastReadNewsAt`
+
+### 7.15 `src/lib/missionConfig.ts`
+
+Catalog มิชชั่น — **เป็นโค้ด ไม่ใช่ DB** เพิ่มมิชชั่นใหม่จึงไม่ต้อง migrate
+
+| Export | รายละเอียด |
+|---|---|
+| `MISSION_KEYS` | 5 key: `daily_login`, `daily_open_pack`, `daily_assign_team`, `weekly_login5`, `weekly_open_pack10` |
+| `MissionKey` / `MissionConfig` | type |
+| `MISSIONS` | `Record<MissionKey, MissionConfig>` — `{key, period, target, reward, label}` |
+
+| Mission | Period | Target | Reward |
+|---|---|---|---|
+| Login วันนี้ | daily | 1 | Silver 15 + EXP 5 |
+| เปิดซอง 1 ครั้ง | daily | 1 | Silver 40 + EXP 10 |
+| วางการ์ดในช่อง 1 ครั้ง | daily | 1 | Silver 25 + EXP 5 |
+| Login สะสมครบ 5 วัน | weekly | 5 | Silver 200 + Standard Pack ฟรี |
+| เปิดซองสะสมครบ 10 ครั้ง | weekly | 10 | Silver 300 + EXP 30 |
+
+> ไม่มี Gold และไม่มี Pack Ticket จาก mission เลย (ตั้งใจ — กันเงินเฟ้อ)
+
+### 7.16 `src/lib/missionPeriod.ts`
+
+| Export | Signature | รายละเอียด |
+|---|---|---|
+| `dailyPeriodKey` | `(d: Date): string` | epoch-day string — ใช้ boundary เดียวกับ `dayIndex()` ใน `daily.ts` |
+| `weeklyPeriodKey` | `(d: Date): string` | epoch-week string |
+
+### 7.17 `src/lib/missions.ts`
+
+| Export | Signature | รายละเอียด |
+|---|---|---|
+| `bumpMission` | `(tx, userId, missionKey, now)` | +1 progress (upsert) — เรียกจาก `packs.ts`, `squad.ts` |
+| `bumpLoginMissions` | `(tx, userId, now)` | bump login daily+weekly ครั้งแรกของวัน — เรียกจาก `daily.ts` |
+| `MissionStatus` | type | `{key, label, period, progress, target, claimed, reward}` |
+| `getMissionStatus` | `(userId, now): Promise<MissionStatus[]>` | เติม default (progress 0) ให้มิชชั่นที่ยังไม่มีแถวใน DB |
+| `ClaimMissionResult` | type | `{ok:true, reward, pack?, leveledUp, level, levelRewards, missionLabel} \| {ok:false, error}` |
+| `claimMission` | `(userId, missionKey, now)` | **atomic compare-and-set** (`updateMany` + เช็ค count) ไม่พึ่ง transaction-serialization ของ SQLite |
+
+จุดที่ bump progress:
+
+- `daily.ts:claimDaily` → `bumpLoginMissions`
+- `packs.ts:openPack` / `openPackWithShards` → `DAILY_OPEN_PACK` + `WEEKLY_OPEN_PACK_10`
+- `squad.ts:assignSlot` → `DAILY_ASSIGN_TEAM`
+
+### 7.18 `src/lib/pvp.ts` (517 บรรทัด)
+
+| Export | Signature | รายละเอียด |
+|---|---|---|
+| `PVP_TIERS` | const | 6 tier: bronze 0 / silver 100 / gold 250 / elite 450 / champion 700 / legend 1000 (RP ขั้นต่ำ) |
+| `tierForRP` | `(rp: number): PvpTier` | **tier ไม่ store ใน DB** — derive จาก `pvpRP` เสมอ |
+| `seasonKey` | `(d: Date): string` | `"YYYY-MM"` แบบ UTC = เดือนปฏิทิน |
+| `winStreakBonus` / `rpMultiplier` / `rpDeltaForOutcome` | pure function | คำนวณโบนัสและ RP ที่ได้/เสีย |
+| `simulateMatch` | `(...)` | จำลองสกอร์ด้วย weighted goal-count distribution + goal events ถ่วงน้ำหนักตาม `slotPos` |
+| `generateBotSquad` | `(tx, targetRating)` | สุ่มทีมบอทจากพูลการ์ดจริง (ขยายช่วง OVR ±15%→±30%→±50%→ไม่จำกัด) |
+| `findOpponent` | `(...)` | หา Squad ผู้เล่นอื่นที่ `cachedRating` ±20% ก่อน ไม่เจอ fallback เป็นบอท |
+| `PvpMatchResult` / `SeasonEndReward` / `PvpStatus` | type | - |
+| `playPvpMatch` | `(userId, now): Promise<PvpMatchResult>` | เล่น 1 แมตช์แบบ atomic ทั้ง flow |
+| `getPvpStatus` | `(userId, now): Promise<PvpStatus>` | read-only — **ไม่** trigger season reset |
+
+`playPvpMatch` ทำตามลำดับใน transaction เดียว:
+
+1. อ่าน Squad ตัวเอง validate ครบ 11 ตำแหน่งก่อนแตะโควตา/ticket (กัน reward commit ทั้งที่แมตช์ reject)
+2. Lazy season check — ถ้า `pvpSeasonKey` ไม่ตรงเดือนปัจจุบัน แจกรางวัลจบ season ตาม tier แล้ว reset `pvpRP = 0`
+3. โควตา: ฟรี 5 แมตช์/วัน (`FREE_MATCHES_PER_DAY`) เกินนั้นหัก Gold 3 (`TICKET_COST_GOLD`) — atomic compare-and-set
+4. Matchmaking → `computeChemistry()` **สดทั้งสองฝั่ง** (ไม่ใช้ `cachedRating` ตรงๆ กันข้อมูลค้าง) → `simulateMatch()`
+5. Apply EXP/Silver/RP/win-streak + level reward + `pvpTotalWins` (สำหรับ achievement)
+
+> Ticket match ที่แพ้ได้ EXP/Silver = 0 (กัน pay-to-farm)
+
+### 7.19 `src/lib/achievementConfig.ts`
+
+Catalog achievement **31 รายการ** — single source of truth ที่ progress/claim/UI ทุกจุดต้องอ่านจากที่นี่
+
+| Category | จำนวน | รายละเอียด |
+|---|---|---|
+| `activity` | 10 | เปิดซองครบ 5/20/50/150/300 + ชนะ PvP ครบ 5/20/50/150/300 |
+| `club` | 20 | สะสมนักเตะครบทีม × 20 สโมสร — gen จาก `data/achievements/club-collection.json` |
+| `meta` | 1 | `big6_complete` — ครบทั้ง 6 สโมสร Big 6 |
+
+- รางวัล activity ไล่ตาม target: 5 → Silver 500 · 20 → +Standard · 50 → Gold 5 + Evolution · 150 → Gold 10 + Royal Prime · 300 → Gold 20 + Royal Prime
+- รางวัล club แบ่ง 2 tier: `small` (Silver 1000 + Standard) / `large` (Silver 1500 + Gold 5 + Evolution)
+- โมดูลนี้ **throw ตอน import** ถ้า `club-collection.json` มีสโมสร Big 6 ไม่ครบ 6 — fail fast ไม่ปล่อยให้ catalog เพี้ยนเงียบ
+
+### 7.20 `src/lib/achievements.ts`
+
+| Export | Signature | รายละเอียด |
+|---|---|---|
+| `AchievementStatus` | type | `{key, category, label, progress, target, claimed, reward}` |
+| `getAchievementStatus` | `(userId): Promise<AchievementStatus[]>` | progress **คำนวณสดเสมอ** — activity อ่านจาก `User.totalPacksOpened`/`pvpTotalWins`, club/meta join `UserCard` |
+| `ClaimAchievementResult` | type | `{ok:true, reward, pack?, leveledUp, level, levelRewards, achievementLabel} \| {ok:false, error}` |
+| `claimAchievement` | `(userId, achievementKey)` | `create()` row (claimed=true ตั้งแต่สร้าง) แล้วอาศัย `@@unique` ชน P2002 เป็นตัวกันเคลมซ้ำแบบ atomic |
+
+> counter `totalPacksOpened` / `pvpTotalWins` เริ่มนับ 0 ตั้งแต่ deploy ระบบนี้ **ไม่ backfill ย้อนหลัง** และ `totalPacksOpened` นับเฉพาะซองที่ user กดเปิดเอง ไม่นับ starter/ซองฟรีจาก milestone
 
 ---
 
@@ -798,12 +995,12 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 
 | ระบบ | สถานะ | หมายเหตุ |
 |---|---|---|
-| PvP Matchmaking | ยังไม่ทำ | หน้า `/pvp` เป็น placeholder |
-| PvP Result Calculation | ยังไม่ทำ | มีแนวคิดใน TASKS.md |
-| Ranking Tiers | ยังไม่ทำ | Bronze → Legend |
+| PvP Matchmaking | **ทำแล้ว** (ขั้น 6) | `findOpponent`/`generateBotSquad` ใน `src/lib/pvp.ts` — hybrid ผู้เล่นจริง ±20% ก่อน ไม่เจอ fallback บอท |
+| PvP Result Calculation | **ทำแล้ว** (ขั้น 6) | `simulateMatch()` — สกอร์ + goal events ถ่วงน้ำหนักตามตำแหน่ง |
+| Ranking Tiers | **ทำแล้ว** (ขั้น 6) | 6 tier derive จาก `pvpRP` ผ่าน `tierForRP()` + season รายเดือน + รางวัลจบ season |
 | Daily/Weekly Missions | **ทำแล้ว** (ขั้น 5) | `src/lib/missionConfig.ts`/`missions.ts` + `MissionList.tsx` — 3 daily + 2 weekly ผูก action จริง |
-| Achievements | ยังไม่ทำ | - |
-| Collection Rewards | ยังไม่ทำ | ครบทีม/ชาติ/ลีก/Big6 (หน้า Collection แสดงการ์ดทำแล้ว มีแค่ reward ที่ยังไม่ทำ) |
+| Achievements | **ทำแล้ว** (ขั้น 5) | `src/lib/achievementConfig.ts`/`achievements.ts` + `/achievements` — 10 activity |
+| Collection Rewards | **ทำแล้ว** (ขั้น 5) | 20 club + 1 meta (Big 6) รวมอยู่ใน catalog เดียวกับ achievement แยกด้วย `category` |
 | Level Milestone Rewards | **ทำแล้ว** (ขั้น 5) | `applyExp()`/`levelReward()` ใน `src/lib/economy.ts` — ทุกเลเวลได้ Silver, ทุก 5/10/25 เลเวลแถม Pack ฟรี (+Gold) |
 | Cosmetic System | ยังไม่ทำ | - |
 | Fantasy Premier XI | ยังไม่ทำ | Phase 4 |
@@ -826,7 +1023,7 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 - Username: `test`
 - Password: `test1234`
 - ยอดเริ่มต้น: **0 ทุกสกุลเงิน** (schema default) — ตรวจโค้ดจริงแล้วพบว่าเอกสารฉบับก่อนหน้าระบุผิด (`devLoginAction`/`resetTestUserAction` ใน `src/app/actions/auth.ts` ไม่ได้ seed silver/gold/ticket ใดๆ แค่ `prisma.user.create()` เฉยๆ ซึ่งใช้ default ทั้งหมด) ต้องเปิด Starter Pack เองถึงจะได้ Silver 300 + การ์ด 11 ใบ
-- ปุ่ม "เข้าสู่ระบบด้วยบัญชีทดสอบ" อยู่ที่หน้า Home และ Login
+- ปุ่ม "เข้าสู่ระบบด้วยบัญชีทดสอบ" อยู่ที่หน้า Home และ Login — **แสดงเฉพาะเมื่อตั้ง `ENABLE_DEV_LOGIN=true`** (ดูหัวข้อ 11)
 - ปุ่ม "เริ่มใหม่" ลบบัญชี test แล้วสร้างใหม่ (simulate ครั้งแรก, cascade ลบการ์ด/ทีมเดิมหมด)
 - ทั้งหมดเป็น TEMP และจะลบก่อน production
 
@@ -842,8 +1039,9 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 
 ### Environment Variables
 
-- `DATABASE_URL` — เช่น `file:./prisma/dev.db`
+- `DATABASE_URL` — ต้องมี `?connection_limit=1` ต่อท้าย (เช่น `file:./dev.db?connection_limit=1`) — **จำเป็น** ไม่ใช่ทางเลือก: ถ้าไม่มี การเปิดซอง/เคลม daily พร้อมกันตั้งแต่ 5 request ขึ้นไปจะ deadlock ล้มทั้งหมด (แก้ไว้ 2026-07-16)
 - `AUTH_SECRET` — ใช้ sign session token
+- `ENABLE_DEV_LOGIN` — ตั้ง `"true"` เพื่อเปิดปุ่มบัญชีทดสอบ ถ้าไม่ตั้ง `devLoginAction`/`resetTestUserAction` จะ `notFound()` (404) และปุ่มถูกซ่อน — **ต้องไม่ตั้งใน production** (ใช้ env var นี้แทน `NODE_ENV` เพราะ preview รัน `next build && next start` ทำให้ `NODE_ENV` เป็น `production` เสมอ)
 
 ไม่มี `PORT` ใน `.env` (ใช้ `process.env.PORT || 3000` ตาม project rule)
 
@@ -858,6 +1056,8 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 | `npm run lint` | `eslint` |
 | `npm run db:import` | `tsx prisma/import-cards.ts` |
 | `npm run db:import-special` | `tsx prisma/import-special-cards.ts` |
+| `npm run db:generate-achievement-clubs` | `tsx prisma/generate-achievement-clubs.ts` |
+| `npm run db:dbml` | `tsx prisma/generate-dbml.ts` |
 | `npm run db:reset` | `prisma migrate reset --force` |
 
 ---
@@ -875,6 +1075,9 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 | `20260714114413_notification_center` | เพิ่ม `User.lastReadNewsAt`, สร้าง Notification, Announcement |
 | `20260716084711_add_evo_prime_shards` | เพิ่ม `User.evoShards`, `User.primeShards` |
 | `20260716091952_add_launch_promo_fields` | เพิ่ม `User.totalLogins`, `evoMilestoneClaimed`, `primeMilestoneClaimed`, `hasDeposited` |
+| `20260717092912_add_mission_progress` | สร้าง MissionProgress |
+| `20260718082658_add_pvp_fields` | เพิ่ม `User.pvpRP`, `pvpSeasonKey`, `pvpWinStreak`, `pvpMatchesToday`, `pvpMatchesDate` |
+| `20260720091455_add_achievement_progress` | สร้าง AchievementProgress + เพิ่ม `User.totalPacksOpened`, `pvpTotalWins` |
 
 ---
 
@@ -889,6 +1092,10 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 7. **Best-effort notifications**: `createNotification` catch error ไม่ throw เพื่อไม่ให้ flow หลักพัง
 8. **Pack opening คืนค่าเป็น array เสมอ**: `OpenResult.cards` มี 5 ใบทุกครั้ง (ไม่ใช่การ์ดเดี่ยวแบบเดิม) — โค้ดที่อ้างอิง `result.card` แบบเก่าจะพังหมด ต้องใช้ `result.cards[0]` หรือวน loop
 9. **Login milestone เป็น one-time flag ไม่ใช่ recurring**: `evoMilestoneClaimed`/`primeMilestoneClaimed` เช็คก่อนแจกทุกครั้งใน `claimDaily()` — ถ้าจะเพิ่ม milestone ใหม่ต้องเพิ่ม field ใน schema ไม่ใช่ผูกกับ `loginStreak` ที่วนซ้ำทุก 7 วัน (จะทำให้แจกซ้ำไม่จบ)
+10. **Catalog เป็นโค้ด ไม่ใช่ DB**: `MISSIONS` (`missionConfig.ts`) และ `ACHIEVEMENTS` (`achievementConfig.ts`) เป็น single source of truth — เพิ่ม/แก้รายการไม่ต้อง migrate แต่ **ห้าม** เขียน key ตรงๆ ที่อื่น ต้องอ้างผ่าน `MISSION_KEYS`/`ACHIEVEMENT_KEYS` เสมอ
+11. **PvP tier ไม่ store ใน DB**: derive จาก `pvpRP` ผ่าน `tierForRP()` ทุกครั้ง (แนวทางเดียวกับ `levelReward()`) — อย่าเพิ่ม column tier
+12. **การเคลมทุกอย่างเป็น atomic compare-and-set**: `claimMission` ใช้ `updateMany` + เช็ค count, `claimAchievement` อาศัย `@@unique` ชน P2002, โควตา PvP ใช้ `updateMany` เช็คเงื่อนไขในตัว query — อย่าเปลี่ยนกลับเป็นอ่านแล้วค่อยเขียน แม้ SQLite จะ serialize ให้ก็ตาม (จะพังตอนย้าย DB)
+13. **`getPvpStatus` ไม่ reset season**: มีแค่ `playPvpMatch` ตอนกดแข่งจริงเท่านั้นที่ทำ lazy season reset — ถ้าเพิ่มหน้าอื่นที่อ่าน PvP status อย่าให้มัน trigger reset
 
 ---
 
