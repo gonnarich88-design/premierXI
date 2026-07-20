@@ -101,6 +101,27 @@ export async function notifyPvpSeasonEnd(
   });
 }
 
+/** แจ้งเตือนปลดล็อก Achievement — silver/gold ถ้ามี + ซองฟรีถ้ามี (เช่น ครบทีม/Big6) */
+export async function notifyAchievementUnlocked(
+  userId: string,
+  achievementLabel: string,
+  reward: { silver: number; gold: number },
+  pack?: { packId: string; cards: OpenedCard[] },
+): Promise<void> {
+  const parts: string[] = [];
+  if (reward.silver) parts.push(`+${reward.silver} Silver`);
+  if (reward.gold) parts.push(`+${reward.gold} Gold`);
+  if (pack) parts.push(`ได้ ${PACK_NAMES[pack.packId] ?? pack.packId} ฟรี`);
+
+  await createNotification({
+    userId,
+    type: "ACHIEVEMENT_UNLOCKED",
+    title: `ปลดล็อก Achievement: ${achievementLabel}`,
+    body: parts.join(" · "),
+    href: "/achievements",
+  });
+}
+
 /**
  * สร้างการแจ้งเตือนส่วนตัว — best-effort: ถ้า write พังจะไม่ throw
  * (ไม่ให้ noti ล้มไปทำให้ flow หลัก เช่น เปิดซอง/รับรางวัล พังตาม)

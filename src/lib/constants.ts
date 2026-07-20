@@ -89,6 +89,7 @@ export const NOTIFICATION_TYPES = [
   "LEVEL_UP",
   "MISSION_CLAIMED",
   "PVP_MATCH",
+  "ACHIEVEMENT_UNLOCKED",
   "SYSTEM",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
