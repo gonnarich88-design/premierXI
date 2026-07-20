@@ -383,19 +383,23 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
     let newWinStreak: number;
     let expGained: number;
     let silverGained: number;
+    let pvpTotalWinsDelta: number;
 
     if (outcome === "win") {
       newWinStreak = user.pvpWinStreak + 1;
       expGained = Math.round(25 * mult) + winStreakBonus(newWinStreak);
       silverGained = Math.round(60 * mult);
+      pvpTotalWinsDelta = 1;
     } else if (outcome === "draw") {
       newWinStreak = user.pvpWinStreak;
       expGained = 15;
       silverGained = 35;
+      pvpTotalWinsDelta = 0;
     } else {
       newWinStreak = 0;
       expGained = isTicketMatch ? 0 : 8;
       silverGained = isTicketMatch ? 0 : 15;
+      pvpTotalWinsDelta = 0;
     }
     const rpDelta = rpDeltaForOutcome(outcome, mult);
 
@@ -417,6 +421,7 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
         exp,
         pvpRP: rpAfter,
         pvpWinStreak: newWinStreak,
+        pvpTotalWins: { increment: pvpTotalWinsDelta },
       },
     });
 
