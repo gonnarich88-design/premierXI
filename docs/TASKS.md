@@ -111,11 +111,33 @@
 - [x] จำกัดฟรีวันละ 5 ครั้ง + ซื้อ Match Ticket ด้วย Gold — atomic compare-and-set แบบเดียวกับ mission system (`updateMany` เช็คเงื่อนไขในตัว query), `isTicketMatch` derive ฝั่ง server ทั้งหมด (ไม่มี client input ให้เชื่อ), ticket match แพ้ได้ EXP/Silver = 0 กัน pay-to-farm — `src/lib/pvp.ts: playPvpMatch`
 - [x] Ranking 6 tier (Bronze→Legend) + season reset + reward — tier derive จาก `pvpRP` ผ่าน pure function `tierForRP()` (ไม่ store แยก), season = เดือนปฏิทิน UTC, lazy hard-reset ตอนตรวจพบ season เปลี่ยน พร้อมแจกรางวัลจบ season ตาม tier ก่อนรีเซ็ต — ดีไซน์เต็มรีวิวโดย Codex แล้ว (13/13 ข้อ) ที่ `docs/superpowers/specs/2026-07-17-pvp-design.md`
 
-## ขั้น 7 — Phase 4: Fantasy Premier XI
-- [ ] Admin: จัดการ Gameweek + กรอกผลงานนักเตะจริง (goals/assists/clean sheet/cards...)
-- [ ] ผู้เล่นจัดทีม Fantasy + ล็อกทีมเมื่อถึง Deadline
-- [ ] เครื่องคำนวณคะแนนอัตโนมัติต่อ Gameweek
-- [ ] Leaderboard: Weekly / Monthly / Season + reward ตามอันดับ
+## ขั้น 7 — Phase 4: Fantasy Premier XI [~]
+ดีไซน์เต็มรีวิวโดย Codex (18 ข้อ) + ตัดสินประเด็นค้าง (รางวัล/เกณฑ์ payout/แบ่ง phase) โดย Fable แล้ว
+สเปคที่ `docs/superpowers/specs/2026-07-20-fantasy-design.md` — แบ่ง 4 sub-phase ทั้งหมดอยู่ใน scope นี้ (ไม่ตัดอะไรออก)
+
+### ขั้น 7A — Core squad + snapshot
+- [ ] Prisma schema: `Gameweek`/`Match`/`PlayerMatchStat`/`FantasyEntry`/`FantasyEntrySlot`/`FantasyGameweekScore`/`FantasyRewardGrant`/`FantasySettlement` + migrate
+- [ ] `fantasyConfig.ts` (ตารางคะแนน/squad quota/formation min/reward config)
+- [ ] Service จัดทีม: validate ownership (`UserCard`), กัน `playerId` ซ้ำข้าม tier, การ์ดต้องตรง position group ของ slot, captain≠vice-captain ต้องอยู่ใน starting XI
+- [ ] Snapshot ทีมแยกต่อ Gameweek ตั้งแต่ตอน save (`now < deadline` เป็นเงื่อนไขใน transaction) + clone จาก entry ล่าสุดตอนเริ่ม GW ใหม่
+- [ ] หน้าจัดทีม Fantasy (สนาม 11 ตัวจริง + bench 4 + badge C/VC) mobile-first
+- [ ] Test: pure validation ครบเงื่อนไข + concurrent save-at-deadline
+
+### ขั้น 7B — Admin กรอกผล + คิดคะแนน (MVP ที่ต้อง ship ก่อน)
+- [ ] Admin: สร้าง Gameweek (deadline + derive `monthKey` freeze) + สร้าง Match ทีละคู่ + กรอกสถิติผูกกับแมตช์ (เสียประตู/คลีนชีต derive จากสกอร์อัตโนมัติ)
+- [ ] `fantasyScoring.ts`: `scorePlayer`/`resolveAutoSubs` (deterministic, exhaustive test)/`resolveCaptain`/`computeRanks`/`rewardTierFor` (dynamic payout ตามจำนวนผู้เข้าแข่ง)
+- [ ] ปิด Gameweek เป็น state machine `LOCKED→SCORING→SCORED` (CAS + reward ledger, resumable/idempotent)
+- [ ] Weekly leaderboard + weekly reward (ตัวเลขตามสเปค เทียบสเกล PvP season-end)
+- [ ] Test: concurrency (ปิด GW ซ้ำ/parallel), resume หลัง process ตายกลาง `SCORING`
+
+### ขั้น 7C — Monthly + operations
+- [ ] Monthly leaderboard (รวมตาม `monthKey` ที่ freeze จาก deadline)
+- [ ] `FantasySettlement` global claim record กันหลาย request แจกซ้อนกัน + resumable reward
+- [ ] Notification ผลคะแนน/รางวัล + admin เห็นสถานะ settlement
+
+### ขั้น 7D — External integration
+- [ ] ปุ่ม admin sync ตารางแข่งจาก API-Football (map ระดับสโมสรเท่านั้น, pre-fill ไม่ auto-publish, `providerFixtureId` unique กัน sync ซ้ำ)
+- [ ] API route ปิด Gameweek/settlement ป้องกันด้วย secret token (constant-time compare, ห้าม fallback เปิดถ้าไม่ตั้ง env, เผื่อ EasyPanel Cron Job ยิงตอน deploy จริง)
 
 ## ขั้น 8 — Season & Event
 - [ ] Season system (เปิดฤดูใหม่: การ์ดใหม่/reset ranking, เก็บ Collection เดิม)
