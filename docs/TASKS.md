@@ -86,8 +86,8 @@
 ## ขั้น 5 — Phase 1: สะสมแต้ม
 - [x] Daily Login (streak + โบนัสวันที่ 7/30) — เช็คอินบนหน้า Home + verify — ตัวเลข reward ปรับเพิ่มอีกรอบใน ขั้น 3.5/3.6 (silver bonus วันที่ 7, gold trickle, milestone 15/30 วัน)
 - [x] Daily Mission / Weekly Mission (track ความคืบหน้า + รับรางวัล) — 3 daily (login/เปิดซอง/จัดทีม) + 2 weekly (login 5 วัน/เปิดซองครบ 10) ผูกกับ action จริงที่มีอยู่แล้ว (ยังไม่ผูก PvP/Fantasy เพราะยังไม่สร้าง), manual claim (ปุ่มกดเอง), ไม่มี Gold/Pack Ticket จาก mission เลย, `MissionProgress` เป็นตารางเดียว generic + catalog เป็นโค้ด (`src/lib/missionConfig.ts`) กันเพิ่มมิชชั่นใหม่ต้อง migrate — ดีไซน์เต็มรีวิวโดย Codex แล้วที่ `docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md`
-- [ ] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
-- [ ] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
+- [~] Achievement (เปิดซองครบ N, ชนะ PvP N, สะสมครบทีม/Big6)
+- [~] Collection rewards (ครบทีม/ชาติ/ลีก/Big6)
 - [x] Level milestone rewards — **แก้แล้ว 2026-07-16** ตาม gdd.txt "3. EXP" (ทุก Level ได้ Silver + Pack, Cosmetic ข้ามไปก่อนเพราะยังไม่มีระบบรองรับ):
   - รวม logic level-up ที่ก็อปซ้ำ 3 ที่ (`economy.ts` dead code เดิม, `packs.ts`, `daily.ts`) เป็น `applyExp()` (pure function คำนวณ level/exp/levelsGained) + `levelReward()` (ตารางรางวัล) ใน `src/lib/economy.ts` ตัวเดียว — `finalizeOpen` (packs.ts) และ `claimDaily` (daily.ts) เรียกร่วมกัน
   - ตารางรางวัล: **ทุกเลเวล** = Silver `level×20` · **ทุก 5 เลเวล** (5,10,15,20...) = + Standard Pack ฟรี · **ทุก 10 เลเวล** = + Evolution Pack ฟรี + Gold 5 · **ทุก 25 เลเวล** = + Royal Prime Pack ฟรี + Gold 10 (เช็คจากสูงไปต่ำ ได้แค่ระดับเดียวต่อเลเวล กันซ้อนทับตอนหารลงตัวหลายเงื่อนไข)
