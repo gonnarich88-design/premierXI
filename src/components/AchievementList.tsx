@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { claimAchievementAction } from "@/app/actions/achievements";
 import { Reward } from "@/components/DailyClaim";
 import type { AchievementStatus } from "@/lib/achievements";
+import { PACKS } from "@/lib/packs";
 
 type Tab = "activity" | "collection";
 
@@ -106,6 +107,14 @@ function AchievementRow({ achievement }: { achievement: AchievementStatus }) {
           <Reward label="Silver" value={achievement.reward.silver} className="text-silver" />
         )}
         {achievement.reward.gold > 0 && <Reward label="Gold" value={achievement.reward.gold} className="text-gold" />}
+        {achievement.reward.freePackId && (
+          <span className="rounded-lg bg-surface-2 px-2 py-1">
+            <span className="font-bold text-accent">
+              {PACKS[achievement.reward.freePackId]?.name ?? achievement.reward.freePackId}
+            </span>{" "}
+            ฟรี
+          </span>
+        )}
       </div>
       {error && <p className="mt-1 text-[11px] text-red-300">{error}</p>}
     </div>
