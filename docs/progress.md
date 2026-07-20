@@ -93,7 +93,7 @@
 ## ข้อมูลสำคัญสำหรับ dev
 - **Import การ์ด:** `npm run db:import` (normal) · `npm run db:import-special` (Evolution/Royal Prime)
 - **Reset DB:** `npm run db:reset` — re-import การ์ด normal อัตโนมัติผ่าน seed hook (การ์ดพิเศษต้องสั่ง import เอง)
-- **ดู schema เร็ว ๆ:** `database.dbml` (regen ด้วย `npm run db:dbml` หลังแก้ schema)
+- **ดู schema เร็ว ๆ:** `docs/database.dbml` (regen ด้วย `npm run db:dbml` หลังแก้ schema)
 - **`npm run dev` = `next build && next start`** โดยตั้งใจ — Preview proxy cache dev-mode chunk ข้าม compilation ทำให้ hydration พังทั้งแอป ห้ามเปลี่ยนกลับเป็น `next dev`
 - **ค่าพลัง 6 ตัว** generate จาก OVR+ตำแหน่ง (`src/lib/cardgen.ts`) — เพราะไม่ได้อยู่บนหน้าการ์ด
 - **หลังแก้ schema/Prisma หรือ next.config → ต้อง restart Preview** (โหลดตอน start เท่านั้น ไม่ hot-reload)

@@ -1,5 +1,5 @@
 /**
- * Generate database.dbml (root ของโปรเจค) จาก "ฐานข้อมูลจริง" (SQLite) ไม่ใช่จาก schema.prisma
+ * Generate docs/database.dbml จาก "ฐานข้อมูลจริง" (SQLite) ไม่ใช่จาก schema.prisma
  *
  * อ่านโครงสร้างสดผ่าน PRAGMA (table_info / foreign_key_list / index_list) เพื่อให้ไฟล์ DBML
  * สะท้อนสภาพ database ปัจจุบันเสมอ — ใช้เป็น reference ตอนเขียน query/migration
@@ -11,7 +11,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 
 const prisma = new PrismaClient();
-const OUTPUT_PATH = join(process.cwd(), "database.dbml");
+const OUTPUT_PATH = join(process.cwd(), "docs", "database.dbml");
 
 type TableRow = { name: string; sql: string };
 type ColumnRow = {

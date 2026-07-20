@@ -42,13 +42,14 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 │   ├── progress.md              # สรุปสถานะ + งานที่ค้าง
 │   ├── game-guide.md            # กลไกเกม/ตัวเลข balance (source of truth ของตัวเลข)
 │   ├── system-reference.md      # เอกสารฉบับนี้
+│   ├── database.dbml            # Schema ที่ gen จาก SQLite จริง (npm run db:dbml)
 │   └── superpowers/specs/       # สเปคดีไซน์รายฟีเจอร์ (mission/pvp/achievement/chemistry)
 ├── prisma/
 │   ├── schema.prisma            # Database schema
 │   ├── import-cards.ts          # Script import การ์ด normal จากรูป + JSON (20 ทีม)
 │   ├── import-special-cards.ts  # Script import การ์ด Evolution/Royal Prime (ไม่มีโฟลเดอร์ทีมย่อย)
 │   ├── generate-achievement-clubs.ts # Gen club achievement catalog → data/achievements/club-collection.json
-│   ├── generate-dbml.ts         # Gen database.dbml จาก SQLite schema จริง
+│   ├── generate-dbml.ts         # Gen docs/database.dbml จาก SQLite schema จริง
 │   ├── dev.db                   # SQLite database
 │   └── migrations/              # Migration files
 ├── data/extracted/              # JSON ข้อมูลการ์ด 20 ทีม + evolution.json + royalprime.json
@@ -115,7 +116,6 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 │       ├── achievementConfig.ts # Catalog achievement 31 รายการ
 │       └── achievements.ts      # Achievement progress (คำนวณสด) + claim
 ├── next.config.ts               # Preview proxy origin allowlist
-├── database.dbml                # Schema ที่ gen จาก SQLite จริง (npm run db:dbml)
 ├── package.json
 ├── tsconfig.json
 └── gdd.md                       # Game Design Document
