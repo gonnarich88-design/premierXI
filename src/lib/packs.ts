@@ -269,6 +269,7 @@ export async function openPack(
     const result = await finalizeOpen(tx, userId, picks);
     await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, now);
     await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, now);
+    await tx.user.update({ where: { id: userId }, data: { totalPacksOpened: { increment: 1 } } });
     return result;
   });
 }
@@ -316,6 +317,7 @@ export async function openPackWithShards(
     const result = await finalizeOpen(tx, userId, picks);
     await bumpMission(tx, userId, MISSION_KEYS.DAILY_OPEN_PACK, now);
     await bumpMission(tx, userId, MISSION_KEYS.WEEKLY_OPEN_PACK_10, now);
+    await tx.user.update({ where: { id: userId }, data: { totalPacksOpened: { increment: 1 } } });
     return result;
   });
 }
