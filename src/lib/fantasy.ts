@@ -78,3 +78,54 @@ export function validateLineup(
 
   return { ok: true };
 }
+
+const entryInclude = {
+  slots: { orderBy: { slotIndex: "asc" as const } },
+};
+
+/** Gameweek ที่ deadline ยังไม่ผ่าน ใกล้ที่สุด — ใช้เป็น "Gameweek ปัจจุบัน" ของหน้าจัดทีม */
+export async function getCurrentGameweek(now: Date = new Date()) {
+  return prisma.gameweek.findFirst({
+    where: { deadline: { gt: now } },
+    orderBy: { number: "asc" },
+  });
+}
+
+/** ทีม Fantasy ของ user สำหรับ Gameweek นี้ — ถ้ายังไม่มี clone จาก entry ล่าสุดของ user เอง (ถ้ามี) */
+export async function getOrCreateEntry(userId: string, gameweekId: string) {
+  const existing = await prisma.fantasyEntry.findUnique({
+    where: { userId_gameweekId: { userId, gameweekId } },
+    include: entryInclude,
+  });
+  if (existing) return existing;
+
+  const latest = await prisma.fantasyEntry.findFirst({
+    where: { userId },
+    orderBy: { gameweek: { number: "desc" } },
+    include: entryInclude,
+  });
+
+  return prisma.fantasyEntry.create({
+    data: {
+      userId,
+      gameweekId,
+      formation: latest?.formation ?? DEFAULT_FORMATION,
+      submittedAt: null,
+      slots: latest
+        ? {
+            create: latest.slots.map((s) => ({
+              cardId: s.cardId,
+              playerId: s.playerId,
+              fantasyPositionGroup: s.fantasyPositionGroup,
+              slotIndex: s.slotIndex,
+              isStarter: s.isStarter,
+              benchPriority: s.benchPriority,
+              isCaptain: s.isCaptain,
+              isViceCaptain: s.isViceCaptain,
+            })),
+          }
+        : undefined,
+    },
+    include: entryInclude,
+  });
+}
