@@ -90,6 +90,9 @@ model Player {
   matchStats   PlayerMatchStat[]
   fantasySlots FantasyEntrySlot[]
   createdAt    DateTime           @default(now())
+
+  // stable identity สำหรับ card-import upsert (prisma/card-import.ts) — กัน reimport สร้าง id ใหม่ทุกครั้ง
+  @@unique([name, club])
 }
 
 /// การ์ด = เวอร์ชันหนึ่งของนักเตะ (เช่น Salah Gold, Salah TOTW) พร้อมค่าพลัง
@@ -125,6 +128,7 @@ model Card {
   fantasySlots FantasyEntrySlot[]
   createdAt    DateTime           @default(now())
 
+  @@unique([playerId, category]) // stable identity สำหรับ card-import upsert (prisma/card-import.ts)
   @@index([tier])
   @@index([category])
 }
@@ -326,10 +330,12 @@ model FantasyEntrySlot {
   entryId String
   entry   FantasyEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
+  // Restrict (ไม่ Cascade) — slot นี้คือ snapshot ที่ต้อง freeze ไว้คิดคะแนนย้อนหลัง การลบ Card/Player
+  // ต้นทางไม่ควรลบ slot ที่ส่งไปแล้วไปด้วยแบบเงียบๆ
   cardId   String
-  card     Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  card     Card   @relation(fields: [cardId], references: [id], onDelete: Restrict)
   playerId String // freeze — ใช้ join กับ PlayerMatchStat ตอนคิดคะแนน (7B)
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Restrict)
 
   fantasyPositionGroup String // GK | DEF | MID | ATT — freeze ตอน save ห้าม derive สด
 
