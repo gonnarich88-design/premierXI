@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "./prisma";
-import { closeGameweek } from "./fantasy";
+import { closeGameweek, getLeaderboard, getMyLeaderboardRow } from "./fantasy";
 import { createGameweek, upsertMatch, upsertPlayerStat } from "./fantasyAdmin";
 import { GAMEWEEK_STATUS } from "./fantasyConfig";
 
@@ -328,6 +328,29 @@ test("closeGameweek: fresh SCORING (not stale) returns busy instead of running a
     await prisma.gameweek.update({ where: { id: gameweekId }, data: { status: "SCORING", scoringStartedAt: new Date() } });
     const result = await closeGameweek(gameweekId);
     assert.deepEqual(result, { ok: false, error: "Gameweek นี้กำลังประมวลผลคะแนนอยู่ ลองใหม่อีกครั้งในอีกสักครู่" });
+  } finally {
+    await cleanupScenario(number, user.id);
+  }
+});
+
+test("getLeaderboard: ordered by frozen rank, getMyLeaderboardRow finds a single user's row", async () => {
+  const number = 910000 + Math.floor(Math.random() * 9000);
+  const { user, player, gameweekId, matchId } = await setupScenario(number);
+  try {
+    await upsertMatch(gameweekId, { id: matchId, homeClub: "CloseFC", awayClub: "OpponentFC", homeScore: 1, awayScore: 0, kickoffAt: null, status: "PLAYED" });
+    await upsertPlayerStat(matchId, player.id, "HOME", { minutes: 90, goals: 1, assists: 0, yellow: 0, red: 0, ownGoals: 0 });
+    await closeGameweek(gameweekId);
+
+    const board = await getLeaderboard(gameweekId);
+    assert.equal(board.length, 1);
+    assert.equal(board[0].userId, user.id);
+    assert.equal(board[0].rank, 1);
+
+    const mine = await getMyLeaderboardRow(gameweekId, user.id);
+    assert.equal(mine?.points, 12);
+
+    const nobody = await getMyLeaderboardRow(gameweekId, "not-a-real-user-id");
+    assert.equal(nobody, null);
   } finally {
     await cleanupScenario(number, user.id);
   }

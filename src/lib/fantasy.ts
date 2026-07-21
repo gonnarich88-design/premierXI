@@ -543,3 +543,38 @@ export async function closeGameweek(
 
   return runScoring(gameweekId, now, now, nowProvider); // now = token ที่เพิ่งตั้งใน CAS ข้างบนตอนชนะเข้าสู่ SCORING
 }
+
+export type LeaderboardRow = {
+  userId: string;
+  username: string;
+  points: number;
+  rank: number | null;
+  rewardTier: string | null;
+};
+
+/** Weekly leaderboard ของ Gameweek หนึ่ง — เรียงตาม rank ที่ freeze ไว้ตอน closeGameweek (ไม่คำนวณสด) */
+export async function getLeaderboard(gameweekId: string, limit = 100): Promise<LeaderboardRow[]> {
+  const rows = await prisma.fantasyGameweekScore.findMany({
+    where: { gameweekId },
+    orderBy: [{ rank: "asc" }, { points: "desc" }],
+    take: limit,
+    include: { user: { select: { username: true } } },
+  });
+  return rows.map((r) => ({
+    userId: r.userId,
+    username: r.user.username,
+    points: r.points,
+    rank: r.rank,
+    rewardTier: r.rewardTier,
+  }));
+}
+
+/** อันดับของ user คนเดียว — ใช้แสดง sticky row ด้านล่าง leaderboard ตาม UI ในสเปค (อาจไม่อยู่ใน top `limit`) */
+export async function getMyLeaderboardRow(gameweekId: string, userId: string): Promise<LeaderboardRow | null> {
+  const row = await prisma.fantasyGameweekScore.findUnique({
+    where: { userId_gameweekId: { userId, gameweekId } },
+    include: { user: { select: { username: true } } },
+  });
+  if (!row) return null;
+  return { userId: row.userId, username: row.user.username, points: row.points, rank: row.rank, rewardTier: row.rewardTier };
+}
