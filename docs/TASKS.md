@@ -124,11 +124,11 @@
 - [x] Test: pure validation ครบเงื่อนไข + concurrent save-at-deadline
 
 ### ขั้น 7B — Admin กรอกผล + คิดคะแนน (MVP ที่ต้อง ship ก่อน)
-- [ ] Admin: สร้าง Gameweek (deadline + derive `monthKey` freeze) + สร้าง Match ทีละคู่ + กรอกสถิติผูกกับแมตช์ (เสียประตู/คลีนชีต derive จากสกอร์อัตโนมัติ)
-- [ ] `fantasyScoring.ts`: `scorePlayer`/`resolveAutoSubs` (deterministic, exhaustive test)/`resolveCaptain`/`computeRanks`/`rewardTierFor` (dynamic payout ตามจำนวนผู้เข้าแข่ง)
-- [ ] ปิด Gameweek เป็น state machine `LOCKED→SCORING→SCORED` (CAS + reward ledger, resumable/idempotent)
-- [ ] Weekly leaderboard + weekly reward (ตัวเลขตามสเปค เทียบสเกล PvP season-end)
-- [ ] Test: concurrency (ปิด GW ซ้ำ/parallel), resume หลัง process ตายกลาง `SCORING`
+- [x] Admin: สร้าง Gameweek (deadline + derive `monthKey` freeze) + สร้าง Match ทีละคู่ + กรอกสถิติผูกกับแมตช์ (เสียประตู/คลีนชีต derive จากสกอร์อัตโนมัติ)
+- [x] `fantasyScoring.ts`: `scorePlayer`/`resolveAutoSubs` (deterministic, exhaustive test)/`resolveCaptain`/`computeRanks`/`rewardTierFor` (dynamic payout ตามจำนวนผู้เข้าแข่ง)
+- [x] ปิด Gameweek เป็น state machine `LOCKED→SCORING→SCORED` (CAS + reward ledger, resumable/idempotent)
+- [x] Weekly leaderboard + weekly reward (ตัวเลขตามสเปค เทียบสเกล PvP season-end)
+- [x] Test: concurrency (ปิด GW ซ้ำ/parallel), resume หลัง process ตายกลาง `SCORING`
 
 ### ขั้น 7C — Monthly + operations
 - [ ] Monthly leaderboard (รวมตาม `monthKey` ที่ freeze จาก deadline)
@@ -157,6 +157,8 @@
   - [x] **Chemistry — แก้แล้ว 2026-07-16:** league link (`LINK_WEIGHT.league` = 0.5) เคยทำให้ทุกทีมได้ teamChem floor 22/33 (67%) อัตโนมัติเพราะการ์ดทุกใบเป็น Premier League หมด (100% แมตช์เสมอ) พิสูจน์ด้วยจำลองทีมที่ไม่มี synergy จริงเลยก็ยังได้ 22/33 — ตัดสินใจ (ยืนยันกับทีมแล้ว: เกมนี้จะมีแต่ Premier League ลีกเดียวตลอดไป ไม่มีแผนเพิ่มลีกอื่น) **ตัด league ออกจากสูตรทั้งหมด** (`LINK_WEIGHT`, `ChemEntry.league`, `team/page.tsx`) เหลือแค่ club (+2) กับ nation (+1) ผลหลังแก้: worst-case (ไม่มี synergy) = 0/33, best-case (คลับ+ชาติเดียวกันหมด) = 33/33, ทีมผสมทั่วไป (จับคู่คลับบางส่วน) ~14/33 — ได้ range เต็ม 0-33 ที่มีความหมายกับการจัดทีมจริงแล้ว. `MAX_CHEM_RATING_BONUS` (0.10) **ตัดสินใจคงค่าเดิมไว้ก่อน** เพราะที่ avgOVR 80: worst=80, best=+8 (88), ทีมผสมทั่วไป=+3 (83) ถือว่าเป็น spread ที่มีน้ำหนักสมเหตุสมผลแล้วหลังแก้ floor bug (เดิมที่ "รู้สึกต่ำ" เป็นเพราะ floor bug บีบ range ให้แคบ ไม่ใช่เพราะ cap ต่ำจริง) — รอ feedback จากการเล่นจริงถ้าต้องปรับอีกทีหลัง
   - [ ] Royal Prime/Evolution pool ไม่มีการ์ดตำแหน่ง LB เลย (Royal Prime ไม่มี RB ด้วย) — ต้องมี asset รูปการ์ดใหม่ก่อนถึงจะเพิ่มได้ เป็นงาน content แยกต่างหาก
   - [ ] Pruning ข้อมูลเก่าของ `MissionProgress` — โตแบบ unbounded ตามจำนวนผู้เล่น×เวลา (1 แถว/มิชชั่น/รอบ/ผู้เล่น) ต้องมี cron/admin action ลบ periodKey ที่พ้นรอบไปแล้วเกิน ~4 สัปดาห์ (เคลมไม่ได้อีกต่อไปตามกติกา "หายเงียบๆ") — ดู `docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md` หัวข้อ "งานที่เลื่อนไปอนาคต"
+  - [ ] **Fantasy admin UI**: กรอกสถิติยังเป็น manual form ต่อนักเตะ (default นาที=90) — ยังไม่มีปุ่ม preset 0/45/60/90 หรือ bulk-set-starters=90 ด้วย client JS ตามที่สเปคหัวข้อ 8 แนะนำ (ลดภาระ admin) เป็น UX polish ที่ตัดออกจากสโคป 7B เพื่อ ship MVP ก่อน
+  - [ ] **Fantasy Monthly/Season leaderboard tab**: `FantasyLeaderboard.tsx` (7B) ยังมีแค่ Weekly — ต้องเพิ่ม tab switcher ตอน 7C ทำ Monthly จริง
 - [ ] แก้ ESLint error ค้าง: `src/lib/pvp.ts:346` — `let matchesToday` ไม่เคย reassign ต้องเป็น `const` (`prefer-const`) ทำให้ `npm run lint` ไม่ผ่านทั้งโปรเจกต์ — หลุดมาจาก commit `7850b4e` (2026-07-19, รีแฟกเตอร์ quota day-rollover ให้ atomic) แก้บรรทัดเดียว
 - [ ] Responsive ครบทุกหน้า (มือถือเป็นหลัก)
 - [ ] เตรียมความเข้ากันได้กับ Telegram Mini App
