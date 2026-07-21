@@ -206,6 +206,47 @@ test("closeGameweek: racing upsertPlayerStat never produces a torn read — eith
   }
 });
 
+test("closeGameweek: racing upsertMatch that clears a score can never let closeGameweek score with an incomplete match (regression — validation read + CAS write used to be two separate steps, so an upsertMatch clearing a score in between could pass validation on stale full data and then get silently outrun by the CAS)", async () => {
+  const number = 910000 + Math.floor(Math.random() * 9000);
+  const { user, gameweekId, matchId } = await setupScenario(number);
+  try {
+    await upsertMatch(gameweekId, { id: matchId, homeClub: "CloseFC", awayClub: "OpponentFC", homeScore: 1, awayScore: 0, kickoffAt: null, status: "PLAYED" });
+
+    const [matchOutcome, closeOutcome] = await Promise.all([
+      upsertMatch(gameweekId, { id: matchId, homeClub: "CloseFC", awayClub: "OpponentFC", homeScore: null, awayScore: null, kickoffAt: null, status: "SCHEDULED" })
+        .then(() => ({ ok: true as const }))
+        .catch((e) => ({ ok: false as const, message: e instanceof Error ? e.message : String(e) })),
+      closeGameweek(gameweekId)
+        .then((result) => ({ threw: false as const, result }))
+        .catch((e) => ({ threw: true as const, message: e instanceof Error ? e.message : String(e) })),
+    ]);
+
+    const gw = await prisma.gameweek.findUniqueOrThrow({ where: { id: gameweekId } });
+    const match = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
+
+    if (matchOutcome.ok) {
+      // upsertMatch เคลียร์สกอร์สำเร็จก่อน (คอมมิตก่อน closeGameweek อ่าน validate ใน tx เดียวกัน) — closeGameweek
+      // ต้อง reject ด้วย validation error เดิม ไม่ใช่ปิดสำเร็จทั้งที่ข้อมูลไม่ครบแล้ว
+      assert.equal(closeOutcome.threw, true, "closeGameweek ต้อง reject เมื่อสกอร์ถูกเคลียร์ไปก่อน validate เสร็จ ไม่ใช่ปิดสำเร็จด้วยข้อมูลไม่ครบ");
+      if (closeOutcome.threw) assert.match(closeOutcome.message, /ยังไม่ได้กรอกสกอร์/);
+      assert.notEqual(gw.status, GAMEWEEK_STATUS.SCORED, "ห้ามเข้า SCORED ทั้งที่แมตช์ไม่มีสกอร์แล้ว");
+      assert.equal(match.homeScore, null);
+    } else {
+      // closeGameweek ชนะ race ก่อน (validate+CAS commit เข้า SCORING แล้วในทรานแซกชันเดียว) — upsertMatch ที่มาที
+      // หลังต้องถูก assertNotScoredYet ปฏิเสธ ไม่ใช่แอบเคลียร์สกอร์ทับหลังผ่าน SCORING ไปแล้ว และ closeGameweek
+      // ต้องปิดสำเร็จโดยใช้ข้อมูลเดิมที่ครบ (1-0) เท่านั้น ไม่มีทางที่สกอร์ null จะแอบหลุดเข้าไปกลายเป็นคะแนน freeze
+      assert.match(matchOutcome.message, /ปิดคิดคะแนนแล้ว/, "upsertMatch ที่มาทีหลังต้องถูกปฏิเสธเพราะเข้า SCORING แล้ว ไม่ใช่เคลียร์สกอร์ผ่านไปได้เงียบๆ");
+      assert.equal(closeOutcome.threw, false);
+      if (!closeOutcome.threw) assert.equal(closeOutcome.result.ok, true);
+      assert.equal(gw.status, GAMEWEEK_STATUS.SCORED);
+      assert.equal(match.homeScore, 1, "สกอร์เดิมที่ validate ผ่านต้องไม่ถูกเคลียร์ทับหลัง reject");
+      assert.equal(match.awayScore, 0);
+    }
+  } finally {
+    await cleanupScenario(number, user.id);
+  }
+});
+
 test("closeGameweek: resumes correctly after a simulated crash mid-SCORING (stale scoringStartedAt)", async () => {
   const number = 910000 + Math.floor(Math.random() * 9000);
   const { user, player, gameweekId, matchId } = await setupScenario(number);

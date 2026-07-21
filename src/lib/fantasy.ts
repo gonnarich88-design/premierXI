@@ -521,17 +521,22 @@ export async function closeGameweek(
 
   if (now < gameweek.deadline) throw new Error("ยังไม่ถึง deadline ของ Gameweek นี้");
 
-  const matches = await prisma.match.findMany({ where: { gameweekId } });
-  if (matches.length === 0) throw new Error("Gameweek นี้ยังไม่มีแมตช์เลย");
-  const unscored = matches.filter(
-    (m) => m.status !== "POSTPONED" && m.status !== "CANCELLED" && (m.homeScore === null || m.awayScore === null),
-  );
-  if (unscored.length > 0) throw new Error(`มีแมตช์ที่ยังไม่ได้กรอกสกอร์ ${unscored.length} คู่`);
+  // อ่าน matches + validate ครบสกอร์ + CAS เข้าสู่ SCORING ต้องอยู่ใน transaction เดียวกันเสมอ (Codex ตรวจ diff
+  // ทั้งฉบับหลัง implement เจอว่าเดิมแยกเป็นสองขั้นตอน — ระหว่างนั้น upsertMatch ยังเขียนได้ปกติเพราะสถานะยังไม่ใช่
+  // SCORING ทำให้ validate ผ่านแล้วแต่ข้อมูลเปลี่ยนไปก่อน CAS ชนะ แล้ว runScoring จะ freeze คะแนนจากข้อมูลไม่ครบ
+  // ถาวร — ปิดด้วย pattern เดียวกับ upsertMatch/upsertPlayerStat: read+validate+write ในทรานแซกชันเดียว)
+  const cas = await prisma.$transaction(async (tx) => {
+    const matches = await tx.match.findMany({ where: { gameweekId } });
+    if (matches.length === 0) throw new Error("Gameweek นี้ยังไม่มีแมตช์เลย");
+    const unscored = matches.filter(
+      (m) => m.status !== "POSTPONED" && m.status !== "CANCELLED" && (m.homeScore === null || m.awayScore === null),
+    );
+    if (unscored.length > 0) throw new Error(`มีแมตช์ที่ยังไม่ได้กรอกสกอร์ ${unscored.length} คู่`);
 
-  // CAS: ผู้ชนะคนเดียวเข้าสู่ SCORING — กันเรียกซ้ำ/parallel
-  const cas = await prisma.gameweek.updateMany({
-    where: { id: gameweekId, status: { in: [GAMEWEEK_STATUS.UPCOMING, GAMEWEEK_STATUS.LOCKED] } },
-    data: { status: GAMEWEEK_STATUS.SCORING, scoringStartedAt: now },
+    return tx.gameweek.updateMany({
+      where: { id: gameweekId, status: { in: [GAMEWEEK_STATUS.UPCOMING, GAMEWEEK_STATUS.LOCKED] } },
+      data: { status: GAMEWEEK_STATUS.SCORING, scoringStartedAt: now },
+    });
   });
   if (cas.count === 0) {
     const fresh = await prisma.gameweek.findUniqueOrThrow({ where: { id: gameweekId } });
