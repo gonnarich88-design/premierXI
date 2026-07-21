@@ -14,7 +14,7 @@ import {
 } from "@/lib/fantasyScoring";
 import { addCurrency } from "@/lib/economy";
 import { grantFreePack } from "@/lib/packs";
-import { notifyFantasyReward } from "@/lib/notifications";
+import { notifyFantasyReward, notifyFantasyScore } from "@/lib/notifications";
 
 export type LineupInput = {
   cardId: string;
@@ -421,13 +421,14 @@ async function runScoring(
   let token: Date = leaseToken;
   for (const r of ranked) {
     const reward = rewardTierFor(r.rank, r.points, participantCount, "WEEKLY");
-    const outcome = await withFencedLease(gameweekId, token, nowProvider, (tx) =>
-      tx.fantasyGameweekScore.upsert({
+    const outcome = await withFencedLease(gameweekId, token, nowProvider, async (tx) => {
+      await tx.fantasyGameweekScore.upsert({
         where: { userId_gameweekId: { userId: r.userId, gameweekId } },
         create: { userId: r.userId, gameweekId, points: r.points, rank: r.rank, rewardTier: reward?.key ?? null },
         update: { points: r.points, rank: r.rank, rewardTier: reward?.key ?? null },
-      }),
-    );
+      });
+      await notifyFantasyScore(r.userId, gameweek.number, r.points, r.rank, tx);
+    });
     if (!outcome) return { ok: false, error: "Gameweek นี้ถูก process อื่น resume ไปแล้วระหว่างที่ยังคำนวณคะแนนอยู่ ลองใหม่อีกครั้ง" };
     token = outcome.token;
   }
