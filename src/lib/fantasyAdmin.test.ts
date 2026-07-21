@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "./prisma";
-import { createGameweek, upsertMatch, listGameweeksForAdmin, getGameweekAdminDetail } from "./fantasyAdmin";
+import { createGameweek, upsertMatch, listGameweeksForAdmin, getGameweekAdminDetail, upsertPlayerStat } from "./fantasyAdmin";
 import { GAMEWEEK_STATUS } from "./fantasyConfig";
 
 async function makeGameweek(number: number, deadlineOffsetMs = 3600_000) {
@@ -102,6 +102,79 @@ test("listGameweeksForAdmin / getGameweekAdminDetail: reflect match count and ne
     assert.equal(detail!.matches[0].stats.length, 0);
   } finally {
     await prisma.gameweek.deleteMany({ where: { number } });
+  }
+});
+
+async function makePlayerAndMatch(number: number) {
+  const gwId = await makeGameweek(number);
+  const { id: matchId } = await upsertMatch(gwId, {
+    homeClub: "TestHome", awayClub: "TestAway", homeScore: null, awayScore: null, kickoffAt: null, status: "SCHEDULED",
+  });
+  const player = await prisma.player.create({
+    data: { name: `StatTest ${number}`, club: "TestHome", nation: "Test", position: "ST" },
+  });
+  return { gwId, matchId, playerId: player.id };
+}
+
+test("upsertPlayerStat: rejects player whose club doesn't match the chosen clubSide", async () => {
+  const number = 900000 + Math.floor(Math.random() * 90000);
+  const { gwId, matchId, playerId } = await makePlayerAndMatch(number);
+  try {
+    await assert.rejects(
+      () => upsertPlayerStat(matchId, playerId, "AWAY", { minutes: 90, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0 }),
+      /ไม่ได้อยู่สโมสร/,
+    );
+  } finally {
+    await prisma.gameweek.deleteMany({ where: { number } });
+    await prisma.player.deleteMany({ where: { id: playerId } });
+  }
+});
+
+test("upsertPlayerStat: rejects minutes over 120 and negative fields", async () => {
+  const number = 900000 + Math.floor(Math.random() * 90000);
+  const { gwId, matchId, playerId } = await makePlayerAndMatch(number);
+  try {
+    await assert.rejects(() =>
+      upsertPlayerStat(matchId, playerId, "HOME", { minutes: 121, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0 }),
+    );
+    await assert.rejects(() =>
+      upsertPlayerStat(matchId, playerId, "HOME", { minutes: 90, goals: -1, assists: 0, yellow: 0, red: 0, ownGoals: 0 }),
+    );
+  } finally {
+    await prisma.gameweek.deleteMany({ where: { number } });
+    await prisma.player.deleteMany({ where: { id: playerId } });
+  }
+});
+
+test("upsertPlayerStat: happy path upserts and is idempotent per (matchId, playerId)", async () => {
+  const number = 900000 + Math.floor(Math.random() * 90000);
+  const { gwId, matchId, playerId } = await makePlayerAndMatch(number);
+  try {
+    await upsertPlayerStat(matchId, playerId, "HOME", { minutes: 90, goals: 1, assists: 0, yellow: 0, red: 0, ownGoals: 0 });
+    await upsertPlayerStat(matchId, playerId, "HOME", { minutes: 90, goals: 2, assists: 1, yellow: 1, red: 0, ownGoals: 0 });
+    const row = await prisma.playerMatchStat.findUniqueOrThrow({ where: { matchId_playerId: { matchId, playerId } } });
+    assert.equal(row.goals, 2);
+    assert.equal(row.assists, 1);
+    const count = await prisma.playerMatchStat.count({ where: { matchId, playerId } });
+    assert.equal(count, 1, "upsert ต้องไม่สร้างแถวซ้ำ");
+  } finally {
+    await prisma.gameweek.deleteMany({ where: { number } });
+    await prisma.player.deleteMany({ where: { id: playerId } });
+  }
+});
+
+test("upsertPlayerStat: blocked once Gameweek enters SCORING", async () => {
+  const number = 900000 + Math.floor(Math.random() * 90000);
+  const { gwId, matchId, playerId } = await makePlayerAndMatch(number);
+  try {
+    await prisma.gameweek.update({ where: { id: gwId }, data: { status: GAMEWEEK_STATUS.SCORING } });
+    await assert.rejects(
+      () => upsertPlayerStat(matchId, playerId, "HOME", { minutes: 90, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0 }),
+      /ปิดคิดคะแนนแล้ว/,
+    );
+  } finally {
+    await prisma.gameweek.deleteMany({ where: { number } });
+    await prisma.player.deleteMany({ where: { id: playerId } });
   }
 });
 

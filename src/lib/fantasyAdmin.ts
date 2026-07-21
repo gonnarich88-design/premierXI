@@ -123,3 +123,52 @@ export async function getGameweekAdminDetail(gameweekId: string) {
   });
 }
 export type GameweekAdminDetail = NonNullable<Awaited<ReturnType<typeof getGameweekAdminDetail>>>;
+
+export type PlayerStatInput = {
+  minutes: number;
+  goals: number;
+  assists: number;
+  yellow: number;
+  red: number;
+  ownGoals: number;
+};
+
+/** กรอกสถิตินักเตะ 1 คนต่อ 1 แมตช์ — clubSide freeze ตอนกรอก (ไม่ derive จาก Player.club สด กันย้ายทีม/แก้ชื่อสโมสร
+ * ทำให้ผลเก่าเพี้ยน — สเปคหัวข้อ 8) validate ว่านักเตะอยู่สโมสรที่ตรง clubSide ที่เลือกจริง
+ *
+ * เช็ค Gameweek status + เขียนจริงต้องอยู่ใน `prisma.$transaction` เดียวกัน (เหตุผลเดียวกับ `upsertMatch` — ปิด
+ * TOCTOU race กับ `closeGameweek`'s CAS ที่อาจ flip เป็น SCORING ระหว่างเช็คสถานะกับ upsert สถิติจริง) */
+export async function upsertPlayerStat(
+  matchId: string,
+  playerId: string,
+  clubSide: "HOME" | "AWAY",
+  stat: PlayerStatInput,
+): Promise<void> {
+  const player = await prisma.player.findUnique({ where: { id: playerId }, select: { club: true } });
+  if (!player) throw new Error("ไม่พบนักเตะนี้");
+
+  for (const [label, value] of Object.entries(stat)) {
+    if (!Number.isInteger(value) || value < 0) throw new Error(`ค่า ${label} ต้องเป็นจำนวนเต็มไม่ติดลบ`);
+  }
+  if (stat.minutes > 120) throw new Error("นาทีที่ลงสนามต้องไม่เกิน 120");
+
+  await prisma.$transaction(async (tx) => {
+    const match = await tx.match.findUnique({
+      where: { id: matchId },
+      select: { homeClub: true, awayClub: true, gameweek: { select: { status: true } } },
+    });
+    if (!match) throw new Error("ไม่พบแมตช์นี้");
+    assertNotScoredYet(match.gameweek.status);
+
+    const expectedClub = clubSide === "HOME" ? match.homeClub : match.awayClub;
+    if (player.club !== expectedClub) {
+      throw new Error(`นักเตะคนนี้ไม่ได้อยู่สโมสร ${expectedClub} (ตรง clubSide ที่เลือก)`);
+    }
+
+    await tx.playerMatchStat.upsert({
+      where: { matchId_playerId: { matchId, playerId } },
+      create: { matchId, playerId, clubSide, ...stat },
+      update: { clubSide, ...stat },
+    });
+  });
+}
