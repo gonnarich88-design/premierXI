@@ -215,3 +215,52 @@ export function scoreEntry(
   const totalPoints = players.reduce((sum, p) => sum + p.points, 0);
   return { totalPoints, players, substitutions };
 }
+
+export type ScoreRow = { userId: string; points: number };
+export type RankedScore = { userId: string; points: number; rank: number };
+
+/** Competition ranking (1,2,2,4) — คะแนนเท่ากันได้อันดับเดียวกัน คนถัดไปข้ามอันดับที่ถูกใช้ไปแล้ว
+ * secondary sort ด้วย userId กันผลลัพธ์เปลี่ยนตาม row order ของ DB (rank เลขเดียวกันเสมอไม่ว่าจะ sort ด้วยอะไร
+ * แต่ลำดับ array output ต้อง deterministic ด้วยเพื่อ audit ซ้ำได้) — ดูสเปคหัวข้อ 10 */
+export function computeRanks(scores: ScoreRow[]): RankedScore[] {
+  const sorted = [...scores].sort((a, b) => b.points - a.points || a.userId.localeCompare(b.userId));
+  const result: RankedScore[] = [];
+  let rank = 0;
+  let prevPoints: number | null = null;
+  for (let i = 0; i < sorted.length; i++) {
+    if (prevPoints === null || sorted[i].points !== prevPoints) rank = i + 1;
+    result.push({ userId: sorted[i].userId, points: sorted[i].points, rank });
+    prevPoints = sorted[i].points;
+  }
+  return result;
+}
+
+/** จำนวนผู้เข้าแข่งขันจริง (submittedAt != null) → เปิด payout ถึงอันดับเท่าไหร่ — ดูสเปคหัวข้อ 12 */
+export function participantRankLimit(participantCount: number): number {
+  for (const tier of PARTICIPANT_TIERS) {
+    if (participantCount >= tier.minParticipants) return tier.rankLimit;
+  }
+  return 0;
+}
+
+/** ผลลัพธ์ = min(rankLimit จาก participant tier, maxRank ของตาราง reward) โดยธรรมชาติ เพราะต้องผ่านทั้งสองเงื่อนไข
+ * ยังไม่มี MONTHLY_REWARDS ใน 7B (มาจริงใน 7C) — เรียกด้วย "MONTHLY" ตอนนี้ throw ชัดเจนแทนคืนพฤติกรรมผิด
+ *
+ * `points <= 0` ไม่ได้รางวัลไม่ว่า rank จะเท่าไหร่ — กัน mass-tie-at-zero (blank GW/สถิติขาด/ทีมไม่มีใครลงสนาม)
+ * ขยาย payout ของ tier สูงสุดไม่จำกัด เพราะคนคะแนน 0 จำนวนมากจะเท่ากันที่ rank 1 พร้อมกันได้ง่ายเกินไป — ดูหัวข้อ
+ * "Reward/tie policy" ด้านบน ties ที่คะแนนบวกเท่ากันจริงยังคงได้รางวัลร่วมกันตามปกติ (ตั้งใจ ไม่ใช่บั๊ก) */
+export function rewardTierFor(
+  rank: number,
+  points: number,
+  participantCount: number,
+  periodType: "WEEKLY" | "MONTHLY",
+): RewardSpec | null {
+  if (periodType === "MONTHLY") throw new Error("MONTHLY reward table ยังไม่ implement ใน 7B (มาใน 7C)");
+  if (points <= 0) return null;
+  const rankLimit = participantRankLimit(participantCount);
+  if (rank > rankLimit) return null;
+  for (const row of WEEKLY_REWARDS) {
+    if (rank <= row.maxRank) return row.reward;
+  }
+  return null;
+}

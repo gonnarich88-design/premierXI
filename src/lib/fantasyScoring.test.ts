@@ -1,7 +1,7 @@
 // src/lib/fantasyScoring.test.ts — รัน: npx tsx --test src/lib/fantasyScoring.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scorePlayer, resolveAutoSubs, resolveCaptain, scoreEntry, type MatchStatLine, type SubSlot, type BenchSlot } from "./fantasyScoring";
+import { scorePlayer, resolveAutoSubs, resolveCaptain, scoreEntry, computeRanks, participantRankLimit, rewardTierFor, type MatchStatLine, type SubSlot, type BenchSlot } from "./fantasyScoring";
 
 function stat(overrides: Partial<MatchStatLine> = {}): MatchStatLine {
   return { playerId: "p1", minutes: 0, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0, goalsConceded: 0, ...overrides };
@@ -234,4 +234,66 @@ test("scoreEntry: double gameweek sums points across both matches", () => {
   const result = scoreEntry(starters, bench, "S8_ATT", "S9_ATT", stats);
   const row = result.players.find((p) => p.playerId === "S10_ATT")!;
   assert.equal(row.points, (2 + 4) * 2, "2 นัด x (2 appearance + 4 ประตู ATT) = รวมกัน");
+});
+
+test("computeRanks: competition ranking with ties (1,2,2,4)", () => {
+  const ranked = computeRanks([
+    { userId: "a", points: 50 },
+    { userId: "b", points: 80 },
+    { userId: "c", points: 80 },
+    { userId: "d", points: 30 },
+  ]);
+  const byUser = Object.fromEntries(ranked.map((r) => [r.userId, r.rank]));
+  assert.equal(byUser.b, 1);
+  assert.equal(byUser.c, 1);
+  assert.equal(byUser.a, 3);
+  assert.equal(byUser.d, 4);
+});
+
+test("computeRanks: deterministic regardless of input array order", () => {
+  const rows = [
+    { userId: "a", points: 50 },
+    { userId: "b", points: 80 },
+    { userId: "c", points: 80 },
+  ];
+  const r1 = computeRanks(rows);
+  const r2 = computeRanks([...rows].reverse());
+  assert.deepEqual(r1, r2);
+});
+
+test("participantRankLimit: matches the tier table exactly at boundaries", () => {
+  assert.equal(participantRankLimit(0), 0);
+  assert.equal(participantRankLimit(1), 1);
+  assert.equal(participantRankLimit(4), 1);
+  assert.equal(participantRankLimit(5), 10);
+  assert.equal(participantRankLimit(19), 10);
+  assert.equal(participantRankLimit(20), 100);
+  assert.equal(participantRankLimit(199), 100);
+  assert.equal(participantRankLimit(200), 1000);
+});
+
+test("rewardTierFor: rank beyond participant-based limit gets nothing even if within reward table", () => {
+  // 3 participants → rankLimit=1 เท่านั้น แม้ WEEKLY_REWARDS เปิดถึงอันดับ 1000
+  assert.equal(rewardTierFor(1, 50, 3, "WEEKLY")?.key, "WEEKLY_TOP1");
+  assert.equal(rewardTierFor(2, 40, 3, "WEEKLY"), null);
+});
+
+test("rewardTierFor: full payout tiers open up at 200+ participants", () => {
+  assert.equal(rewardTierFor(1, 50, 200, "WEEKLY")?.key, "WEEKLY_TOP1");
+  assert.equal(rewardTierFor(10, 40, 200, "WEEKLY")?.key, "WEEKLY_TOP10");
+  assert.equal(rewardTierFor(100, 30, 200, "WEEKLY")?.key, "WEEKLY_TOP100");
+  assert.equal(rewardTierFor(1000, 20, 200, "WEEKLY")?.key, "WEEKLY_TOP1000");
+  assert.equal(rewardTierFor(1001, 20, 200, "WEEKLY"), null);
+});
+
+test("rewardTierFor: points <= 0 never gets a reward regardless of rank (mass-tie-at-zero guard)", () => {
+  // rank 1 ปกติควรได้ WEEKLY_TOP1 แต่ถ้าคะแนน 0 (หรือติดลบ) ต้องไม่ได้ ไม่ว่า participantCount จะเท่าไหร่
+  assert.equal(rewardTierFor(1, 0, 500, "WEEKLY"), null);
+  assert.equal(rewardTierFor(1, -3, 500, "WEEKLY"), null);
+  // แต่ถ้ามีคะแนนบวกจริง (แม้แค่ 1 แต้ม) rank 1 ยังได้ตามปกติ
+  assert.equal(rewardTierFor(1, 1, 500, "WEEKLY")?.key, "WEEKLY_TOP1");
+});
+
+test("rewardTierFor: MONTHLY throws in 7B (not implemented yet)", () => {
+  assert.throws(() => rewardTierFor(1, 50, 200, "MONTHLY"));
 });
