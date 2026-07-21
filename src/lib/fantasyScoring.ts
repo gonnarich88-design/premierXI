@@ -154,3 +154,64 @@ export function resolveAutoSubs(
   const playerIds = [...effective.values()].filter((playerId) => playedMinutes(playerId, minutesByPlayerId));
   return { playerIds, substitutions };
 }
+
+/**
+ * เลือกว่าใครได้ captain multiplier x2 — ตรวจจาก minutes ของ captain/vice ตัวจริงเท่านั้น (ไม่สนใจว่าใครถูกแทนเข้ามา
+ * ในช่องนั้น เพราะ "ตัวสำรองที่เข้ามาแทน Captain ไม่รับตำแหน่ง Captain ต่อ" — ดูสเปคหัวข้อ 6 ข้อ 5)
+ */
+export function resolveCaptain(
+  captainPlayerId: string,
+  viceCaptainPlayerId: string,
+  minutesByPlayerId: Map<string, number>,
+): string | null {
+  if (playedMinutes(captainPlayerId, minutesByPlayerId)) return captainPlayerId;
+  if (playedMinutes(viceCaptainPlayerId, minutesByPlayerId)) return viceCaptainPlayerId;
+  return null;
+}
+
+export type ScoredPlayer = { playerId: string; points: number; isCaptain: boolean; substitutedIn: boolean };
+export type ScoreEntryResult = {
+  totalPoints: number;
+  players: ScoredPlayer[];
+  substitutions: { outPlayerId: string; inPlayerId: string }[];
+};
+
+/**
+ * คิดคะแนนทีมทั้งทีม 1 Gameweek — รวม auto-sub + captain + Double/Blank Gameweek (statsByPlayerId มี 0/1/2
+ * แถวต่อคนได้ตามจำนวนแมตช์ที่ทีมนั้นเล่นใน GW นี้ ผลรวมจากทุกแมตช์ตามสเปคหัวข้อ 9)
+ * ใช้ fantasyPositionGroup ที่ freeze มากับแต่ละ slot เสมอ (ไม่ใช่ group ของช่องที่ไปแทน) ตามสเปคหัวข้อ 3
+ */
+export function scoreEntry(
+  starters: SubSlot[],
+  bench: BenchSlot[],
+  captainPlayerId: string,
+  viceCaptainPlayerId: string,
+  statsByPlayerId: Map<string, MatchStatLine[]>,
+): ScoreEntryResult {
+  const minutesByPlayerId = new Map<string, number>();
+  const groupByPlayerId = new Map<string, PositionGroup>();
+  for (const s of [...starters, ...bench]) {
+    groupByPlayerId.set(s.playerId, s.positionGroup);
+    const rows = statsByPlayerId.get(s.playerId) ?? [];
+    minutesByPlayerId.set(
+      s.playerId,
+      rows.reduce((sum, r) => sum + r.minutes, 0),
+    );
+  }
+
+  const { playerIds: effectivePlayerIds, substitutions } = resolveAutoSubs(starters, bench, minutesByPlayerId);
+  const captainId = resolveCaptain(captainPlayerId, viceCaptainPlayerId, minutesByPlayerId);
+  const subInIds = new Set(substitutions.map((s) => s.inPlayerId));
+
+  const players: ScoredPlayer[] = effectivePlayerIds.map((playerId) => {
+    const rows = statsByPlayerId.get(playerId) ?? [];
+    const group = groupByPlayerId.get(playerId)!;
+    const base = rows.reduce((sum, r) => sum + scorePlayer(r, group), 0);
+    const isCaptain = playerId === captainId;
+    const points = isCaptain ? base * SCORING.CAPTAIN_MULTIPLIER : base;
+    return { playerId, points, isCaptain, substitutedIn: subInIds.has(playerId) };
+  });
+
+  const totalPoints = players.reduce((sum, p) => sum + p.points, 0);
+  return { totalPoints, players, substitutions };
+}

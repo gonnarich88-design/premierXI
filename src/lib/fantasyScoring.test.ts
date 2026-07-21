@@ -1,7 +1,7 @@
 // src/lib/fantasyScoring.test.ts — รัน: npx tsx --test src/lib/fantasyScoring.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scorePlayer, resolveAutoSubs, type MatchStatLine, type SubSlot, type BenchSlot } from "./fantasyScoring";
+import { scorePlayer, resolveAutoSubs, resolveCaptain, scoreEntry, type MatchStatLine, type SubSlot, type BenchSlot } from "./fantasyScoring";
 
 function stat(overrides: Partial<MatchStatLine> = {}): MatchStatLine {
   return { playerId: "p1", minutes: 0, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0, goalsConceded: 0, ...overrides };
@@ -179,4 +179,59 @@ test("resolveAutoSubs: accepts two simultaneous substitutions across different g
   assert.equal(result.playerIds.filter((id) => id.endsWith("_DEF")).length, 3, "DEF: S3,S4,B2 = 3 พอดีขั้นต่ำ");
   assert.equal(result.playerIds.filter((id) => id.endsWith("_MID")).length, 2, "MID: S7,B3 = 2 พอดีขั้นต่ำ");
   assert.equal(result.playerIds.length, 9, "final XI เหลือ 9 คน (S1,S2,S5,S6 หลุดไปเฉยๆ ไม่มีใครมาเติมช่องที่เหลือ)");
+});
+
+test("resolveCaptain: captain gets x2 when played", () => {
+  const minutes = new Map([["cap", 90], ["vice", 90]]);
+  assert.equal(resolveCaptain("cap", "vice", minutes), "cap");
+});
+
+test("resolveCaptain: falls back to vice when captain didn't play", () => {
+  const minutes = new Map([["cap", 0], ["vice", 90]]);
+  assert.equal(resolveCaptain("cap", "vice", minutes), "vice");
+});
+
+test("resolveCaptain: nobody gets x2 when both didn't play", () => {
+  const minutes = new Map([["cap", 0], ["vice", 0]]);
+  assert.equal(resolveCaptain("cap", "vice", minutes), null);
+});
+
+test("resolveCaptain: bench player subbed into captain's slot never inherits captaincy", () => {
+  // captain ไม่ลงสนามเลย ต่อให้มีคนมาแทนในสนามจริง captain เดิมก็ยังไม่ได้ x2 (เช็คจาก playerId ตรงๆ ไม่ใช่ slot)
+  const minutes = new Map([["cap", 0], ["vice", 0], ["subIn", 90]]);
+  assert.equal(resolveCaptain("cap", "vice", minutes), null);
+});
+
+test("scoreEntry: full XI, no subs needed, captain doubled", () => {
+  const starters: SubSlot[] = STARTERS;
+  const bench: BenchSlot[] = BENCH;
+  const stats = new Map<string, MatchStatLine[]>();
+  for (const s of starters) {
+    // goalsConceded: 1 (ไม่ใช่ 0) ตั้งใจ — กัน clean sheet bonus (ต้องการ goalsConceded===0) มาปนกับตัวเลขที่ต้อง
+    // isolate เฉพาะ captain multiplier ล้วนๆ ในเทสนี้ floor(1/2)=0 ก็เลยไม่โดนหักด้วย ทุกคนได้แค่ appearance 2 แต้มเท่ากัน
+    stats.set(s.playerId, [
+      { playerId: s.playerId, minutes: 90, goals: 0, assists: 0, yellow: 0, red: 0, ownGoals: 0, goalsConceded: 1 },
+    ]);
+  }
+  const result = scoreEntry(starters, bench, "S8_ATT", "S9_ATT", stats);
+  // ทุกคน 90 นาทีเฉยๆ ไม่มี clean sheet/เหตุการณ์อื่น = 2 แต้มคนละ (11x2=22) ยกเว้น captain ได้ x2 เพิ่มอีก +2 (2→4)
+  assert.equal(result.totalPoints, 11 * 2 + 2, "11 คน x2 แต้มเท่ากันหมด บวกส่วนต่างที่ captain ได้ x2 (+2)");
+  const captainRow = result.players.find((p) => p.playerId === "S8_ATT")!;
+  assert.equal(captainRow.isCaptain, true);
+  assert.equal(captainRow.points, 4);
+  assert.equal(result.substitutions.length, 0);
+});
+
+test("scoreEntry: double gameweek sums points across both matches", () => {
+  const starters: SubSlot[] = STARTERS;
+  const bench: BenchSlot[] = BENCH;
+  const stats = new Map<string, MatchStatLine[]>();
+  for (const s of starters) stats.set(s.playerId, []);
+  stats.set("S10_ATT", [
+    { playerId: "S10_ATT", minutes: 90, goals: 1, assists: 0, yellow: 0, red: 0, ownGoals: 0, goalsConceded: 0 },
+    { playerId: "S10_ATT", minutes: 90, goals: 1, assists: 0, yellow: 0, red: 0, ownGoals: 0, goalsConceded: 0 },
+  ]);
+  const result = scoreEntry(starters, bench, "S8_ATT", "S9_ATT", stats);
+  const row = result.players.find((p) => p.playerId === "S10_ATT")!;
+  assert.equal(row.points, (2 + 4) * 2, "2 นัด x (2 appearance + 4 ประตู ATT) = รวมกัน");
 });
