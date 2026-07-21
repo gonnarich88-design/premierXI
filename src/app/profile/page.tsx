@@ -56,6 +56,15 @@ export default async function ProfilePage() {
         </Link>
       )}
 
+      {user.isAdmin && (
+        <Link
+          href="/admin/fantasy"
+          className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+        >
+          จัดการ Fantasy (Admin)
+        </Link>
+      )}
+
       <form action={logoutAction}>
         <button
           type="submit"
