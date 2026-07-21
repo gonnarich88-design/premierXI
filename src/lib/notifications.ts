@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { NotificationType } from "@/lib/constants";
 import type { LevelUpReward, OpenedCard } from "@/lib/packs";
@@ -122,19 +123,68 @@ export async function notifyAchievementUnlocked(
   });
 }
 
+/** แจ้งเตือนผลคะแนน Fantasy ของ Gameweek ที่เพิ่งปิด — เรียกใน tx เดียวกับการแจกรางวัลของ user คนนั้น (ถ้ามี) */
+export async function notifyFantasyScore(
+  userId: string,
+  gameweekNumber: number,
+  points: number,
+  rank: number | null,
+  tx?: Prisma.TransactionClient,
+): Promise<void> {
+  const rankText = rank ? ` · อันดับ ${rank}` : "";
+  await createNotification(
+    {
+      userId,
+      type: "FANTASY_SCORE",
+      title: `ผลคะแนน Fantasy Gameweek ${gameweekNumber}`,
+      body: `ได้ ${points} แต้ม${rankText}`,
+      href: "/fantasy",
+    },
+    tx,
+  );
+}
+
+/** แจ้งเตือนรางวัล Fantasy — เรียกใน tx เดียวกับ addCurrency()/grantFreePack() ของรางวัลนั้น (ledger กันแจกซ้ำแล้ว) */
+export async function notifyFantasyReward(
+  userId: string,
+  gameweekNumber: number,
+  reward: { silver?: number; gold?: number; packId?: string },
+  tx?: Prisma.TransactionClient,
+): Promise<void> {
+  const parts: string[] = [];
+  if (reward.silver) parts.push(`+${reward.silver} Silver`);
+  if (reward.gold) parts.push(`+${reward.gold} Gold`);
+  if (reward.packId) parts.push(`ได้ ${PACK_NAMES[reward.packId] ?? reward.packId} ฟรี`);
+
+  await createNotification(
+    {
+      userId,
+      type: "FANTASY_REWARD",
+      title: `ได้รับรางวัล Fantasy Gameweek ${gameweekNumber}`,
+      body: parts.join(" · "),
+      href: "/fantasy",
+    },
+    tx,
+  );
+}
+
 /**
  * สร้างการแจ้งเตือนส่วนตัว — best-effort: ถ้า write พังจะไม่ throw
  * (ไม่ให้ noti ล้มไปทำให้ flow หลัก เช่น เปิดซอง/รับรางวัล พังตาม)
  */
-export async function createNotification(input: {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  body?: string;
-  href?: string;
-}): Promise<void> {
+export async function createNotification(
+  input: {
+    userId: string;
+    type: NotificationType;
+    title: string;
+    body?: string;
+    href?: string;
+  },
+  tx?: Prisma.TransactionClient,
+): Promise<void> {
+  const db = tx ?? prisma;
   try {
-    await prisma.notification.create({
+    await db.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
