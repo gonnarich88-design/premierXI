@@ -61,3 +61,7 @@ export const WEEKLY_REWARDS: { maxRank: number; reward: RewardSpec }[] = [
   { maxRank: 100, reward: { key: "WEEKLY_TOP100", silver: 300 } },
   { maxRank: 1000, reward: { key: "WEEKLY_TOP1000", silver: 100 } },
 ];
+
+/** ถ้า Gameweek ค้างในสถานะ SCORING นานกว่านี้ ถือว่า process เดิมตายแล้ว อนุญาตให้ resume ได้ — ก่อนหน้านั้นถือว่า
+ * มีคนกำลังประมวลผลอยู่จริง ตอบ busy แทนที่จะรันซ้อนกัน (ดูสเปคหัวข้อ 7: "เช็คจาก scoringStartedAt เก่ากว่า threshold") */
+export const SCORING_STALE_THRESHOLD_MS = 5 * 60_000; // 5 นาที
