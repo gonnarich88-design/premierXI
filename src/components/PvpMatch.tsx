@@ -108,7 +108,6 @@ export default function PvpMatch({ status }: { status: PvpStatus }) {
           </p>
           <p className="text-center text-sm text-muted">
             {result.outcome === "win" ? "ชนะ!" : result.outcome === "draw" ? "เสมอ" : "แพ้"}
-            {result.isBotOpponent ? " (คู่แข่ง: บอท)" : ""}
           </p>
 
           <div className="mt-3 space-y-1">

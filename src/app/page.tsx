@@ -7,6 +7,10 @@ import DailyClaim from "@/components/DailyClaim";
 import MissionList from "@/components/MissionList";
 import { getMissionStatus } from "@/lib/missions";
 import StarterPackModal from "@/components/StarterPackModal";
+import { FORMATIONS } from "@/lib/formations";
+import { computeChemistry, type ChemEntry } from "@/lib/chemistry";
+import { getPvpStatus } from "@/lib/pvp";
+import { getCurrentGameweek } from "@/lib/fantasy";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -83,6 +87,7 @@ async function LoggedInHome({
   userId: string;
   user: {
     username: string;
+    teamName: string | null;
     level: number;
     exp: number;
     silver: number;
@@ -97,18 +102,81 @@ async function LoggedInHome({
   const need = user.level * 100;
   const pct = Math.min(100, Math.round((user.exp / need) * 100));
 
+  // Active Squad summary (สำหรับการ์ด My Club) — อ่านอย่างเดียว ห้ามสร้าง Squad จากหน้า Home
+  // (getOrCreateSquad เป็น find-then-create ไม่ atomic เหมาะกับหน้า /club ที่ตั้งใจเข้ามาสร้างเท่านั้น)
+  const squad = await prisma.squad.findUnique({
+    where: { userId },
+    include: { slots: { orderBy: { index: "asc" }, include: { card: { include: { player: true } } } } },
+  });
+  const layout = squad ? FORMATIONS[squad.formation] ?? FORMATIONS["4-3-3"] : [];
+  const chemEntries: (ChemEntry | null)[] = layout.map((slot, i) => {
+    const card = squad?.slots[i]?.card;
+    if (!card) return null;
+    return {
+      ovr: card.ovr,
+      position: card.position,
+      altPositions: card.altPositions ? card.altPositions.split(",") : [],
+      club: card.player.club,
+      nation: card.player.nation,
+      slotPos: slot.pos,
+    };
+  });
+  const chem = computeChemistry(chemEntries);
+
+  // PvP quota วันนี้ (read-only)
+  const pvpStatus = await getPvpStatus(userId, new Date());
+
+  // Fantasy: gameweek ปัจจุบัน + เช็คว่า submit ทีมหรือยัง — อ่านอย่างเดียว ห้ามเรียก getOrCreateEntry (มี side effect สร้าง draft)
+  const currentGameweek = await getCurrentGameweek(new Date());
+  const myEntry = currentGameweek
+    ? await prisma.fantasyEntry.findUnique({
+        where: { userId_gameweekId: { userId, gameweekId: currentGameweek.id } },
+        select: { submittedAt: true },
+      })
+    : null;
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted">
-        สวัสดี <span className="font-semibold text-foreground">{user.username}</span>
+        สวัสดี <span className="font-semibold text-foreground">{user.teamName ?? user.username}</span>
       </p>
 
-      {/* Currency bar */}
-      <div className="grid grid-cols-4 gap-2 rounded-2xl border border-border bg-surface/60 p-3 text-center text-xs">
-        <Stat label="Silver" value={user.silver} className="text-silver" />
-        <Stat label="Gold" value={user.gold} className="text-gold" />
+      {/* Currency bar (Silver/Gold ย้ายไปโชว์ค้างที่ header แล้ว) */}
+      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface/60 p-3 text-center text-xs">
         <Stat label="Ticket" value={user.packTicket} className="text-accent" />
         <Stat label="การ์ด" value={cardCount} className="text-primary" />
+      </div>
+
+      {/* Shortcut cards: My Club / PvP / Fantasy */}
+      <div className="grid grid-cols-3 gap-2">
+        <Link
+          href="/club"
+          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
+        >
+          <p className="text-xs font-semibold">My Club</p>
+          <p className="mt-1 text-lg font-bold text-accent">{chem.rating || "-"}</p>
+          <p className="text-[10px] text-muted">Chem {chem.teamChem}/33</p>
+        </Link>
+        <Link
+          href="/pvp"
+          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
+        >
+          <p className="text-xs font-semibold">PvP</p>
+          <p className="mt-1 text-lg font-bold text-accent">{pvpStatus.matchesRemaining}</p>
+          <p className="text-[10px] text-muted">แมตช์เหลือวันนี้</p>
+        </Link>
+        <Link
+          href="/fantasy"
+          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
+        >
+          <p className="text-xs font-semibold">Fantasy</p>
+          <p className="mt-1 text-lg font-bold text-accent">
+            {!currentGameweek ? "-" : myEntry?.submittedAt ? "ส่งแล้ว" : "ยังไม่ส่ง"}
+          </p>
+          <p className="text-[10px] text-muted">
+            {currentGameweek ? `GW${currentGameweek.number}` : "ไม่มีรอบเปิด"}
+          </p>
+        </Link>
       </div>
 
       {/* Level / EXP */}
@@ -168,10 +236,10 @@ async function LoggedInHome({
           เปิดซอง
         </Link>
         <Link
-          href="/team"
+          href="/club"
           className="rounded-xl border border-border bg-surface py-4 text-center font-bold hover:border-primary"
         >
-          จัดทีม
+          My Club
         </Link>
       </div>
     </div>

@@ -159,7 +159,54 @@
   - [ ] Pruning ข้อมูลเก่าของ `MissionProgress` — โตแบบ unbounded ตามจำนวนผู้เล่น×เวลา (1 แถว/มิชชั่น/รอบ/ผู้เล่น) ต้องมี cron/admin action ลบ periodKey ที่พ้นรอบไปแล้วเกิน ~4 สัปดาห์ (เคลมไม่ได้อีกต่อไปตามกติกา "หายเงียบๆ") — ดู `docs/superpowers/specs/2026-07-17-daily-weekly-mission-design.md` หัวข้อ "งานที่เลื่อนไปอนาคต"
   - [ ] **Fantasy admin UI**: กรอกสถิติยังเป็น manual form ต่อนักเตะ (default นาที=90) — ยังไม่มีปุ่ม preset 0/45/60/90 หรือ bulk-set-starters=90 ด้วย client JS ตามที่สเปคหัวข้อ 8 แนะนำ (ลดภาระ admin) เป็น UX polish ที่ตัดออกจากสโคป 7B เพื่อ ship MVP ก่อน
   - [ ] **Fantasy Monthly/Season leaderboard tab**: `FantasyLeaderboard.tsx` (7B) ยังมีแค่ Weekly — ต้องเพิ่ม tab switcher ตอน 7C ทำ Monthly จริง
+  - [~] **Fantasy nav entry point**: ผู้เล่นทั่วไปไม่มีทางเข้า `/fantasy` จาก UI เลย — แก้ไปพร้อมกับงาน redesign bottom nav ทั้งระบบ ดูรายละเอียดที่ **ขั้น 11**
 - [ ] แก้ ESLint error ค้าง: `src/lib/pvp.ts:346` — `let matchesToday` ไม่เคย reassign ต้องเป็น `const` (`prefer-const`) ทำให้ `npm run lint` ไม่ผ่านทั้งโปรเจกต์ — หลุดมาจาก commit `7850b4e` (2026-07-19, รีแฟกเตอร์ quota day-rollover ให้ atomic) แก้บรรทัดเดียว
 - [ ] Responsive ครบทุกหน้า (มือถือเป็นหลัก)
 - [ ] เตรียมความเข้ากันได้กับ Telegram Mini App
 - [ ] ทดสอบ core loop end-to-end
+
+## ขั้น 11 — Navigation redesign + My Club + ชื่อทีม [~]
+วิเคราะห์เมนู EA Sports FC Companion App เป็นแรงบันดาลใจ (bento home, header currency ค้าง, hub+card แทนการยัดทุกอย่างในหน้าเดียว) แผนเต็มวางโดย Opus แล้ว ตัดสินใจร่วมกับผู้ใช้ครบทุกจุดเปิด implement เสร็จหมดแล้ว **เหลือแค่ manual browser QA**
+
+### Bottom nav ใหม่ (แทนที่ 5 แท็บเดิม: หน้าหลัก/เปิดซอง/จัดทีม/PvP/โปรไฟล์)
+- [x] Home (`/`) — bento grid
+- [x] Store (path เดิม `/pack` แค่เปลี่ยน label เป็น "Store")
+- [x] PvP (`/pvp` ไม่เปลี่ยน)
+- [x] Fantasy (`/fantasy` ไม่เปลี่ยน — ปิด gap "หาทางเข้าไม่เจอ" จาก 7B)
+- [x] My Club (หน้าใหม่ `/club` — hub มีการ์ดลิงก์ "จัดทีม"→`/team` เดิม กับ "คลังการ์ด"→`/collection` เดิม ไม่ merge เนื้อหาเข้าด้วยกัน)
+- [x] "โปรไฟล์" ตัดออกจาก bottom nav ทั้งหมด ย้ายเป็นไอคอนที่ header แทน (logout ย้ายไปอยู่ในหน้า profile อย่างเดียว ตัดออกจาก header)
+- [x] ไฮไลต์แท็บ "My Club" ครอบ `/club`, `/team`, `/collection` ทั้ง 3 path
+
+### ฟีเจอร์ "ชื่อทีม" (ใหม่)
+- [x] Schema: `User.teamName String?` (nullable, ไม่ unique) — migration `20260722110000_add_user_team_name` ผ่าน Codex review (approve) + deploy แล้ว
+- [x] Validation: 2-20 ตัวอักษร, trim+normalize NFC, รองรับไทย/อังกฤษ/ตัวเลข/เว้นวรรค, ว่าง = เคลียร์กลับเป็น null — `src/app/actions/club.ts`
+- [x] แก้ไขได้จากหน้า `/club` (`TeamNameEditor.tsx` + `setTeamNameAction`)
+- [x] Fantasy Leaderboard โชว์ `displayName` (= `teamName ?? username`) แทน username ตรงๆ — `LeaderboardRow`/`getLeaderboard`/`getMyLeaderboardRow` ใน `src/lib/fantasy.ts` + `FantasyLeaderboard.tsx`
+- PvP ไม่ต้องแตะ (ยืนยันแล้วว่าไม่เคยโชว์ username คู่แข่ง)
+
+### Header ใหม่
+- [x] Silver/Gold ค้างมุมขวาบนทุกหน้า (`layout.tsx` ส่งเข้า `AppHeader.tsx`)
+- [x] ไอคอนโปรไฟล์ที่ header → `/profile`
+- [x] คงกระดิ่งแจ้งเตือนเดิม → `/notifications`
+- [x] เอาแถบ Silver/Gold ที่หน้า Home ออก (เหลือ Ticket/การ์ด)
+
+### Home bento grid
+- [x] การ์ด Active Squad summary (rating/chemistry ย่อ) → ลิงก์ My Club
+- [x] การ์ด PvP status (quota วันนี้เหลือ) → ลิงก์ PvP
+- [x] การ์ด Fantasy status (ส่งทีมหรือยัง/GW ปัจจุบัน) → ลิงก์ Fantasy — ใช้ `prisma.fantasyEntry.findUnique` read-only ไม่เรียก `getOrCreateEntry`
+
+### Codex review findings (แก้ครบแล้วรอบ 2, approve)
+- [x] **[high]** regex เดิม `\p{L}\p{N}` ไม่รองรับ Unicode combining mark (`\p{M}`) ทำให้ชื่อไทยทั่วไปอย่าง "ทีม"/"ชื่อทีม" (มีสระ/วรรณยุกต์ประกอบ) ไม่ผ่าน validation — เพิ่ม `\p{M}` ในคลาส + `normalize("NFC")` ก่อน trim
+- [x] **[medium]** การ์ด Active Squad บน Home เดิมเรียก `getOrCreateSquad` (find-then-create ไม่ atomic) ทำให้แค่เปิดหน้า Home ก็เขียน DB และเสี่ยง race ตอน concurrent first-load — เปลี่ยนเป็น `prisma.squad.findUnique` read-only ล้วน โชว์ "-" ถ้ายังไม่มี squad
+
+### Verify
+- [x] `npx tsx --test` ผ่านทั้งหมด 52/52 (`fantasy.close.test.ts`/`fantasyAdmin.test.ts`/`fantasyScoring.test.ts`/`notifications.test.ts`)
+- [x] `npx tsc --noEmit` และ `npm run build` ผ่านสะอาด (ไม่มี error ใหม่, lint error เดิมที่ `pvp.ts:346` เป็นหนี้เก่าไม่เกี่ยวกับงานนี้)
+- [x] Codex adversarial-review 2 รอบ — รอบแรก needs-attention (2 finding ด้านบน), รอบ 2 approve
+- [ ] **Manual browser QA ผ่าน Preview** — เหลือขั้นตอนเดียว: เช็คทุกแท็บใหม่ (Home bento/Store/PvP/Fantasy/My Club), ตั้งชื่อทีมที่ `/club`, เช็คชื่อทีมโชว์ถูกใน Fantasy Leaderboard, เช็ค header currency/โปรไฟล์/กระดิ่งทำงานถูก
+
+### Fix เพิ่มระหว่าง QA (นอกสโคปเดิมของขั้น 11 แต่ทำไปพร้อมกัน)
+- [x] **PvP**: เอาข้อความ "(คู่แข่ง: บอท)" ออกจากผลแมตช์ (`PvpMatch.tsx`) — ไม่บอกผู้เล่นอีกต่อไปว่าคู่แข่งเป็นบอทหรือคนจริง (ยังคำนวณ `isBotOpponent` ภายในเหมือนเดิม แค่ไม่โชว์ UI)
+- [x] **แจ้งเตือน — badge unread ไม่หายหลังอ่าน**: ต้นเหตุคือ `markAllRead()` เดิมถูกเรียกตรงจาก render ของ `src/app/notifications/page.tsx` (ไม่ใช่ Server Action) เลยไม่มี `revalidatePath` ทำให้ root layout (ที่โชว์ badge ใน `AppHeader`) ไม่เคยถูกสั่ง refresh ค่า unread แก้โดยย้ายไปเป็น Server Action `markNotificationsReadAction` (`src/app/actions/notifications.ts`) เรียกจาก client component `MarkNotificationsRead.tsx` ตอน mount + `revalidatePath("/", "layout")`
+  - ระหว่างแก้ Codex เจอ race เพิ่ม: ย้ายไปทำงานหลัง client hydrate ทำให้หน้าต่าง race (แจ้งเตือนใหม่เกิดขึ้นระหว่างเปิดหน้าโดนนับว่าอ่านแล้ว) กว้างกว่าของเดิม — แก้ด้วยการ capture `cutoff` timestamp ตอน page.tsx โหลด snapshot แล้วส่งต่อไปให้ `markAllRead(userId, cutoff)` ใน `src/lib/notifications.ts` mark เฉพาะรายการที่ `createdAt <= cutoff` เท่านั้น (ทำใน `$transaction` เดียวกับการอัพเดต `lastReadNewsAt`)
+  - **[ ] Known limitation ที่ยังไม่แก้ (ตัดสินใจแล้วว่าพอแค่นี้ ไม่ทำต่อตอนนี้)**: หน้า notifications โชว์แค่ 50 รายการล่าสุด/30 ข่าวล่าสุด แต่ mark-as-read (ตาม cutoff เวลา) จะปัด unread รายการเก่ากว่านั้นทั้งหมดว่าอ่านแล้วไปด้วย แม้ไม่เคยแสดงให้เห็นในหน้านั้น — เป็นพฤติกรรมเดิมที่มีอยู่ก่อนงานนี้แล้ว (ไม่ใช่ regression) ผลกระทบต่ำ (แค่ badge หายก่อนเห็น ไม่ใช่ข้อมูล/เงินหาย) จะแก้ให้ครบร้อยเปอร์เซ็นต์ต้องเปลี่ยนจาก watermark ตามเวลาเป็น read-receipt ต่อรายการจริง (schema ใหม่) — เกินสโคปที่ขอตอนนี้ รอ backlog

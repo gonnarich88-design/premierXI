@@ -552,6 +552,7 @@ export async function closeGameweek(
 export type LeaderboardRow = {
   userId: string;
   username: string;
+  displayName: string; // teamName ?? username — โชว์ใน UI แทน username ตรงๆ
   points: number;
   rank: number | null;
   rewardTier: string | null;
@@ -563,11 +564,12 @@ export async function getLeaderboard(gameweekId: string, limit = 100): Promise<L
     where: { gameweekId },
     orderBy: [{ rank: "asc" }, { points: "desc" }],
     take: limit,
-    include: { user: { select: { username: true } } },
+    include: { user: { select: { username: true, teamName: true } } },
   });
   return rows.map((r) => ({
     userId: r.userId,
     username: r.user.username,
+    displayName: r.user.teamName ?? r.user.username,
     points: r.points,
     rank: r.rank,
     rewardTier: r.rewardTier,
@@ -578,8 +580,15 @@ export async function getLeaderboard(gameweekId: string, limit = 100): Promise<L
 export async function getMyLeaderboardRow(gameweekId: string, userId: string): Promise<LeaderboardRow | null> {
   const row = await prisma.fantasyGameweekScore.findUnique({
     where: { userId_gameweekId: { userId, gameweekId } },
-    include: { user: { select: { username: true } } },
+    include: { user: { select: { username: true, teamName: true } } },
   });
   if (!row) return null;
-  return { userId: row.userId, username: row.user.username, points: row.points, rank: row.rank, rewardTier: row.rewardTier };
+  return {
+    userId: row.userId,
+    username: row.user.username,
+    displayName: row.user.teamName ?? row.user.username,
+    points: row.points,
+    rank: row.rank,
+    rewardTier: row.rewardTier,
+  };
 }

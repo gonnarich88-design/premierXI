@@ -30,7 +30,7 @@ export default function FantasyLeaderboard({
             >
               <span className="flex items-center gap-2">
                 <span className="w-6 text-muted">{r.rank ?? "-"}</span>
-                <span>{r.username}</span>
+                <span>{r.displayName}</span>
               </span>
               <span className="flex items-center gap-2">
                 {r.rewardTier && (
@@ -47,7 +47,7 @@ export default function FantasyLeaderboard({
         <div className="sticky bottom-16 mt-3 flex items-center justify-between rounded-lg border border-primary/40 bg-primary/15 px-3 py-2 text-sm font-semibold">
           <span className="flex items-center gap-2">
             <span className="w-6 text-muted">{myRow.rank ?? "-"}</span>
-            <span>{myRow.username} (คุณ)</span>
+            <span>{myRow.displayName} (คุณ)</span>
           </span>
           <span>{myRow.points} แต้ม</span>
         </div>

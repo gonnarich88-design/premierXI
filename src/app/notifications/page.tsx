@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import {
   getNotificationCenter,
-  markAllRead,
   type NotificationItem,
   type NewsItem,
 } from "@/lib/notifications";
+import MarkNotificationsRead from "@/components/MarkNotificationsRead";
 
 export const metadata = { title: "การแจ้งเตือน · Premier XI" };
 
@@ -26,14 +26,16 @@ export default async function NotificationsPage() {
   const userId = await getSessionUserId();
   if (!userId) redirect("/login");
 
-  // ดึง snapshot (พร้อมสถานะอ่าน/ใหม่) ก่อน แล้วค่อยทำเครื่องหมายอ่านแล้ว → รอบหน้า badge หาย
+  // capture cutoff ก่อนอ่าน snapshot เสมอ — ส่งไป mark-as-read ฝั่ง client (ดู MarkNotificationsRead) กัน
+  // รายการที่เพิ่งถูกสร้างขึ้นระหว่างเปิดหน้า (หลัง snapshot นี้) โดนนับว่าอ่านแล้วทั้งที่ไม่เคยแสดงให้เห็น
+  const cutoff = new Date();
   const { news, notifications } = await getNotificationCenter(userId);
-  await markAllRead(userId);
 
   const empty = news.length === 0 && notifications.length === 0;
 
   return (
     <div className="px-4 pt-5">
+      <MarkNotificationsRead cutoff={cutoff.toISOString()} />
       <h1 className="mb-4 text-lg font-bold">การแจ้งเตือน</h1>
 
       {empty && (

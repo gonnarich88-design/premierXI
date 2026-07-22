@@ -85,6 +85,7 @@ export async function getCurrentUser() {
     select: {
       id: true,
       username: true,
+      teamName: true,
       phone: true,
       isAdmin: true,
       level: true,

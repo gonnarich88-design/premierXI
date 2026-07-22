@@ -314,16 +314,18 @@ export async function getNotificationCenter(userId: string): Promise<{
   };
 }
 
-/** ทำเครื่องหมายว่าอ่านแล้วทั้งหมด (noti ส่วนตัว + ข่าว) */
-export async function markAllRead(userId: string): Promise<void> {
-  await Promise.all([
+/** ทำเครื่องหมายว่าอ่านแล้วทั้งหมด (noti ส่วนตัว + ข่าว) — เฉพาะรายการที่ถูกสร้างไม่เกิน `cutoff`
+ * (เวลาที่ capture ไว้ตอนโหลด snapshot ให้ user เห็น) กันรายการที่เพิ่งเกิดขึ้นระหว่างเปิดหน้าโดนนับว่าอ่านแล้วทั้งที่ไม่เคยเห็น
+ * ทั้งสอง update อยู่ใน transaction เดียวกันกัน lastReadNewsAt กับสถานะ read ของ notification เพี้ยนไม่ตรงกัน */
+export async function markAllRead(userId: string, cutoff: Date = new Date()): Promise<void> {
+  await prisma.$transaction([
     prisma.notification.updateMany({
-      where: { userId, read: false },
+      where: { userId, read: false, createdAt: { lte: cutoff } },
       data: { read: true },
     }),
-    prisma.user.update({
-      where: { id: userId },
-      data: { lastReadNewsAt: new Date() },
+    prisma.user.updateMany({
+      where: { id: userId, OR: [{ lastReadNewsAt: null }, { lastReadNewsAt: { lt: cutoff } }] },
+      data: { lastReadNewsAt: cutoff },
     }),
   ]);
 }

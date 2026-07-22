@@ -1,15 +1,26 @@
 import Link from "next/link";
-import { logoutAction } from "@/app/actions/auth";
 
-// Header บางๆ ด้านบน (แสดงเฉพาะตอนล็อกอิน) — กระดิ่งแจ้งเตือน + badge + ออกจากระบบ
+// Header บางๆ ด้านบน (แสดงเฉพาะตอนล็อกอิน) — currency ค้าง + กระดิ่งแจ้งเตือน + ไอคอนโปรไฟล์
 // Solid icon, ไม่ใช้ emoji ตามกฎ UI
-export default function AppHeader({ unread }: { unread: number }) {
+export default function AppHeader({
+  unread,
+  silver,
+  gold,
+}: {
+  unread: number;
+  silver: number;
+  gold: number;
+}) {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/90 px-4 py-2.5 backdrop-blur">
       <Link href="/" className="text-sm font-extrabold tracking-tight text-primary">
         Premier XI
       </Link>
-      <div className="-mr-1 flex items-center gap-1">
+      <div className="-mr-1 flex items-center gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold">
+          <span className="text-silver">{silver.toLocaleString()}</span>
+          <span className="text-gold">{gold.toLocaleString()}</span>
+        </div>
         <Link
           href="/notifications"
           aria-label="การแจ้งเตือน"
@@ -24,17 +35,15 @@ export default function AppHeader({ unread }: { unread: number }) {
             </span>
           )}
         </Link>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            aria-label="ออกจากระบบ"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-red-300"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-              <path d="M16 17v-3H9v-4h7V7l5 5-5 5ZM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9Z" />
-            </svg>
-          </button>
-        </form>
+        <Link
+          href="/profile"
+          aria-label="โปรไฟล์"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-foreground"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z" />
+          </svg>
+        </Link>
       </div>
     </header>
   );
