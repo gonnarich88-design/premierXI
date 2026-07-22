@@ -1,6 +1,6 @@
 # Premier XI — Progress
 
-อัปเดตล่าสุด: 2026-07-20
+อัปเดตล่าสุด: 2026-07-22
 
 เกมสะสมการ์ดนักฟุตบอลพรีเมียร์ลีก (Pack Opening + Team Building + PvP + Fantasy)
 อ้างอิงดีไซน์: `gdd.md` · แผนงานละเอียด: `docs/TASKS.md` · กลไก/ตัวเลข: `docs/game-guide.md` · สถาปัตยกรรม: `docs/system-reference.md`
@@ -37,10 +37,12 @@
 | 5 | สะสมแต้ม (Daily/Mission/Achievement/Level reward) | ✅ เสร็จ |
 | 5.5 | Notification Center + Admin News | ✅ เสร็จ |
 | 6 | PvP + Ranking | ✅ เสร็จ |
-| 7 | Fantasy Premier XI | ⬜ ยังไม่เริ่ม |
+| 7 | Fantasy Premier XI | 🔨 กำลังทำ — 7A/7B เสร็จ, 7C (monthly + settlement)/7D (API-Football sync) ยังไม่เริ่ม |
 | 8 | Season & Event | ⬜ ยังไม่เริ่ม |
 | 9 | Admin Panel (เต็มรูปแบบ) | ⬜ ยังไม่เริ่ม |
 | 10 | Polish & Verify | 🔨 กำลังทำ |
+| 11 | Navigation redesign + My Club + ชื่อทีม | 🔨 กำลังทำ — implement เสร็จ 100% เหลือ manual browser QA |
+| 12 | Fantasy hub bento redesign + fixtures/ข่าว/TOTW | 🔨 กำลังทำ — implement เสร็จ เหลือ manual browser QA |
 
 **ขั้น 10 (กำลังทำ):**
 - ✅ ตรวจ balance เศรษฐกิจ — รีวิวเต็ม 2026-07-16 แก้ไป 4 เรื่อง (Standard Gold rate, weekly Gold trickle, shard rebate gap, OVR penalty) บันทึกที่ `docs/game-guide.md` หัวข้อ 13
@@ -64,6 +66,7 @@
 - **Achievement** (`/achievements`) — activity / club / meta + collection rewards
 - **แจ้งเตือน** (`/notifications`) — ข่าว + กิจกรรม, กระดิ่ง+badge บน header
 - **แอดมินข่าว** (`/admin/news`) — เขียน/เผยแพร่/ลบประกาศ (gate `isAdmin`)
+- **Fantasy** (`/fantasy` bento hub + subpages) — จัดทีม, ตารางแข่ง, ข่าว, weekly leaderboard, TOTW; Admin กรอกผล/ปิด Gameweek ที่ `/admin/fantasy` (monthly leaderboard + API-Football sync ยังไม่ทำ — ขั้น 7C/7D)
 - **โปรไฟล์** (`/profile`) — ข้อมูล + ออกจากระบบ
 
 ---
@@ -86,7 +89,7 @@
 **ฟีเจอร์ที่ยังไม่ทำ**
 - หน้า UI เติมเงินจริง — backend (`mockDeposit()` + First Deposit Bonus +20%) พร้อมแล้ว เหลือแค่หน้าเรียกใช้
 - Pity/ตัวช่วยกันโชคร้ายสำหรับสล็อตการันตีของ Evolution/Royal Prime (optional)
-- ขั้น 7 Fantasy · ขั้น 8 Season & Event · ขั้น 9 Admin Panel เต็มรูปแบบ
+- ขั้น 7C/7D Fantasy (monthly leaderboard + FantasySettlement, API-Football sync) · ขั้น 8 Season & Event · ขั้น 9 Admin Panel เต็มรูปแบบ
 
 ---
 
