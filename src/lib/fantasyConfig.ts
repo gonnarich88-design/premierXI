@@ -14,6 +14,32 @@ export const SQUAD_QUOTA = {
 /** ตัวสำรองสูงสุดต่อทีม */
 export const MAX_BENCH_SIZE = 4;
 
+/** 20 สโมสร Premier League ฤดูกาล 2026/27 (ตรวจจาก premierleague.com ทางการ) — ใช้เป็น dropdown ตอน admin
+ * เพิ่มแมตช์ กันพิมพ์ชื่อ club ผิด/สะกดคลาดเคลื่อนจนไม่ตรงกับ Player.club ในฐานข้อมูล ไม่ใช่ allowlist บังคับที่ชั้น
+ * validation ของ upsertMatch (ยังรับชื่อ club อื่นได้ เพื่อไม่ผูก test/ข้อมูลเก่าที่ใช้ชื่อ club อื่น) */
+export const PREMIER_LEAGUE_CLUBS = [
+  "AFC Bournemouth",
+  "Arsenal",
+  "Aston Villa",
+  "Brentford",
+  "Brighton & Hove Albion",
+  "Chelsea",
+  "Coventry City",
+  "Crystal Palace",
+  "Everton",
+  "Fulham",
+  "Hull City",
+  "Ipswich Town",
+  "Leeds United",
+  "Liverpool",
+  "Manchester City",
+  "Manchester United",
+  "Newcastle United",
+  "Nottingham Forest",
+  "Sunderland",
+  "Tottenham Hotspur",
+] as const;
+
 export const GAMEWEEK_STATUS = {
   UPCOMING: "UPCOMING",
   LOCKED: "LOCKED",

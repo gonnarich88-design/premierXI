@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getGameweekAdminDetail, type GameweekAdminDetail } from "@/lib/fantasyAdmin";
 import { upsertMatchAction, upsertPlayerStatAction, closeGameweekAction } from "@/app/actions/fantasyAdmin";
+import { PREMIER_LEAGUE_CLUBS } from "@/lib/fantasyConfig";
 
 export const metadata = { title: "จัดการ Gameweek · Admin" };
 
@@ -49,18 +50,28 @@ export default async function AdminGameweekDetailPage({
           <input type="hidden" name="gameweekId" value={gameweekId} />
           <h2 className="text-sm font-semibold">เพิ่มแมตช์ใหม่</h2>
           <div className="grid grid-cols-2 gap-3">
-            <input
+            <select
               name="homeClub"
               required
-              placeholder="ทีมเหย้า"
+              defaultValue=""
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <input
+            >
+              <option value="" disabled>ทีมเหย้า</option>
+              {PREMIER_LEAGUE_CLUBS.map((club) => (
+                <option key={club} value={club}>{club}</option>
+              ))}
+            </select>
+            <select
               name="awayClub"
               required
-              placeholder="ทีมเยือน"
+              defaultValue=""
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
+            >
+              <option value="" disabled>ทีมเยือน</option>
+              {PREMIER_LEAGUE_CLUBS.map((club) => (
+                <option key={club} value={club}>{club}</option>
+              ))}
+            </select>
           </div>
           <input
             name="kickoffAt"
