@@ -85,6 +85,11 @@ test("closeGameweek: happy path scores, ranks, grants weekly reward (single part
 
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.equal(freshUser.gold, 3, "WEEKLY_TOP1 ให้ 3 Gold");
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "ต้องได้แจ้งเตือนผลคะแนน 1 แถว");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 1, "ต้องได้แจ้งเตือนรางวัล 1 แถว");
   } finally {
     await cleanupScenario(number, user.id);
   }
@@ -149,6 +154,11 @@ test("closeGameweek: calling again after SCORED is a no-op (idempotent, no dupli
     assert.equal(grants, 2, "ยังคง 2 แถว (GOLD+PACK) ไม่เพิ่มซ้ำ");
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.equal(freshUser.gold, 3, "Gold ต้องไม่ถูกแจกซ้ำ");
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "เรียก closeGameweek ซ้ำหลัง SCORED ต้องไม่ส่งแจ้งเตือนผลคะแนนซ้ำ");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 1, "เรียก closeGameweek ซ้ำหลัง SCORED ต้องไม่ส่งแจ้งเตือนรางวัลซ้ำ");
   } finally {
     await cleanupScenario(number, user.id);
   }
@@ -171,6 +181,11 @@ test("closeGameweek: 8 concurrent calls score exactly once, no duplicate ledger 
     assert.equal(grants, 2, "8 ครั้งพร้อมกันต้องได้ ledger แค่ชุดเดียว (GOLD+PACK)");
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.equal(freshUser.gold, 3, "Gold ต้องไม่ถูกแจกซ้ำแม้เรียกพร้อมกัน 8 ครั้ง");
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "8 caller พร้อมกันต้องได้แจ้งเตือนผลคะแนนแค่ 1 แถว");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 1, "8 caller พร้อมกันต้องได้แจ้งเตือนรางวัลแค่ 1 แถว");
   } finally {
     await cleanupScenario(number, user.id);
   }
@@ -272,6 +287,11 @@ test("closeGameweek: resumes correctly after a simulated crash mid-SCORING (stal
     assert.equal(score.points, 12);
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.equal(freshUser.gold, 3);
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "resume หลัง crash ต้องไม่ส่งแจ้งเตือนผลคะแนนซ้ำ");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 1, "resume หลัง crash ต้องไม่ส่งแจ้งเตือนรางวัลซ้ำ");
   } finally {
     await cleanupScenario(number, user.id);
   }
@@ -311,6 +331,11 @@ test("closeGameweek: 8 concurrent calls against a stale mid-SCORING gameweek tak
     assert.equal(grants, 2, "8 caller ชิง lease พร้อมกันบน stale SCORING ต้องยังจบด้วย ledger แค่ชุดเดียว (GOLD+PACK)");
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     assert.equal(freshUser.gold, 3, "Gold ต้องไม่ถูกแจกซ้ำแม้ 8 caller แย่ง takeover lease พร้อมกัน");
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "8 caller แย่ง takeover lease พร้อมกันต้องได้แจ้งเตือนผลคะแนนแค่ 1 แถว");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 1, "8 caller แย่ง takeover lease พร้อมกันต้องได้แจ้งเตือนรางวัลแค่ 1 แถว");
   } finally {
     await cleanupScenario(number, user.id);
   }
@@ -354,6 +379,11 @@ test("closeGameweek: aborts mid-run the moment it loses the lease, without grant
 
     const gw = await prisma.gameweek.findUniqueOrThrow({ where: { id: gameweekId } });
     assert.equal(gw.status, GAMEWEEK_STATUS.SCORING, "ต้องไม่ถูกปิดเป็น SCORED โดย owner ที่เสีย lease ไปแล้ว (ยังค้าง SCORING ตาม hostile write ที่จำลองไว้)");
+
+    const scoreNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_SCORE" } });
+    assert.equal(scoreNotifs, 1, "phase 1 (freeze score) เกิดขึ้นก่อนเสีย lease จึงส่งแจ้งเตือนผลคะแนนไปแล้ว 1 แถว");
+    const rewardNotifs = await prisma.notification.count({ where: { userId: user.id, type: "FANTASY_REWARD" } });
+    assert.equal(rewardNotifs, 0, "phase 2 (แจกรางวัล) ไม่เกิดขึ้นเลย จึงต้องไม่มีแจ้งเตือนรางวัล");
   } finally {
     await cleanupScenario(number, user.id);
   }

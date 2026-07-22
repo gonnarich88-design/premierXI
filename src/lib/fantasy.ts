@@ -273,26 +273,25 @@ async function grantWeeklyReward(
   gameweekNumber: number,
   reward: { silver?: number; gold?: number; packId?: string },
 ): Promise<void> {
-  let grantedAny = false;
   if (reward.silver) {
-    const granted = await grantOnce(tx, userId, "WEEKLY", gameweekId, "SILVER", { amount: reward.silver }, async () => {
+    await grantOnce(tx, userId, "WEEKLY", gameweekId, "SILVER", { amount: reward.silver }, async () => {
       await addCurrency(userId, "silver", reward.silver!, tx);
     });
-    grantedAny = grantedAny || granted;
   }
   if (reward.gold) {
-    const granted = await grantOnce(tx, userId, "WEEKLY", gameweekId, "GOLD", { amount: reward.gold }, async () => {
+    await grantOnce(tx, userId, "WEEKLY", gameweekId, "GOLD", { amount: reward.gold }, async () => {
       await addCurrency(userId, "gold", reward.gold!, tx);
     });
-    grantedAny = grantedAny || granted;
   }
   if (reward.packId) {
-    const granted = await grantOnce(tx, userId, "WEEKLY", gameweekId, "PACK", { packId: reward.packId }, async () => {
+    await grantOnce(tx, userId, "WEEKLY", gameweekId, "PACK", { packId: reward.packId }, async () => {
       await grantFreePack(tx, userId, reward.packId!);
     });
-    grantedAny = grantedAny || granted;
   }
-  if (grantedAny) await notifyFantasyReward(userId, gameweekNumber, reward, tx);
+  // เรียก notify เสมอ ไม่ผูกกับว่ารอบนี้ grant ledger ใหม่จริงหรือไม่ — createNotificationOnce เป็น idempotent
+  // เอง (upsert บน idempotencyKey) ถ้า resume มาแล้วเคยแจก ledger ไปก่อนหน้านี้แล้วแต่ notification เดิมยังไม่เคย
+  // ส่งสำเร็จ (เช่น crash ระหว่างนั้นพอดี) เรียกซ้ำตรงนี้จะซ่อมให้ครบแทนที่จะข้ามไปเงียบๆ
+  await notifyFantasyReward(userId, gameweekId, gameweekNumber, reward, tx);
 }
 
 export type CloseGameweekResult =
@@ -427,7 +426,7 @@ async function runScoring(
         create: { userId: r.userId, gameweekId, points: r.points, rank: r.rank, rewardTier: reward?.key ?? null },
         update: { points: r.points, rank: r.rank, rewardTier: reward?.key ?? null },
       });
-      await notifyFantasyScore(r.userId, gameweek.number, r.points, r.rank, tx);
+      await notifyFantasyScore(r.userId, gameweekId, gameweek.number, r.points, r.rank, tx);
     });
     if (!outcome) return { ok: false, error: "Gameweek นี้ถูก process อื่น resume ไปแล้วระหว่างที่ยังคำนวณคะแนนอยู่ ลองใหม่อีกครั้ง" };
     token = outcome.token;

@@ -186,6 +186,11 @@ model Notification {
   body  String?
   href  String? // deep link เช่น /collection, /pack
 
+  /// key กันสร้างซ้ำสำหรับ notification ที่ผูกกับ resumable operation (เช่น Fantasy scoring ที่ resume ได้หลัง
+  /// crash) รูปแบบ "fantasy:score:<gameweekId>:<userId>" — null สำหรับ notification ทั่วไปที่ยังสร้างซ้ำได้ปกติ
+  /// (pack/PvP/mission ฯลฯ) ดู createNotificationOnce ใน src/lib/notifications.ts
+  idempotencyKey String? @unique
+
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

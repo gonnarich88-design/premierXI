@@ -123,46 +123,52 @@ export async function notifyAchievementUnlocked(
   });
 }
 
-/** แจ้งเตือนผลคะแนน Fantasy ของ Gameweek ที่เพิ่งปิด — เรียกใน tx เดียวกับการแจกรางวัลของ user คนนั้น (ถ้ามี) */
+/** แจ้งเตือนผลคะแนน Fantasy ของ Gameweek ที่เพิ่งปิด — เรียกใน tx เดียวกับ score upsert เสมอ (`withFencedLease`)
+ * ใช้ `createNotificationOnce` กัน resume หลัง crash ส่งซ้ำ (ดู idempotencyKey บน Notification model) */
 export async function notifyFantasyScore(
   userId: string,
+  gameweekId: string,
   gameweekNumber: number,
   points: number,
   rank: number | null,
-  tx?: Prisma.TransactionClient,
+  tx: Prisma.TransactionClient,
 ): Promise<void> {
   const rankText = rank ? ` · อันดับ ${rank}` : "";
-  await createNotification(
+  await createNotificationOnce(
     {
       userId,
       type: "FANTASY_SCORE",
       title: `ผลคะแนน Fantasy Gameweek ${gameweekNumber}`,
       body: `ได้ ${points} แต้ม${rankText}`,
       href: "/fantasy",
+      idempotencyKey: `fantasy:score:${gameweekId}:${userId}`,
     },
     tx,
   );
 }
 
-/** แจ้งเตือนรางวัล Fantasy — เรียกใน tx เดียวกับ addCurrency()/grantFreePack() ของรางวัลนั้น (ledger กันแจกซ้ำแล้ว) */
+/** แจ้งเตือนรางวัล Fantasy — เรียกใน tx เดียวกับ addCurrency()/grantFreePack() ของรางวัลนั้น (ledger กันแจกซ้ำแล้ว)
+ * ใช้ `createNotificationOnce` กัน resume หลัง crash ส่งซ้ำ (ดู idempotencyKey บน Notification model) */
 export async function notifyFantasyReward(
   userId: string,
+  gameweekId: string,
   gameweekNumber: number,
   reward: { silver?: number; gold?: number; packId?: string },
-  tx?: Prisma.TransactionClient,
+  tx: Prisma.TransactionClient,
 ): Promise<void> {
   const parts: string[] = [];
   if (reward.silver) parts.push(`+${reward.silver} Silver`);
   if (reward.gold) parts.push(`+${reward.gold} Gold`);
   if (reward.packId) parts.push(`ได้ ${PACK_NAMES[reward.packId] ?? reward.packId} ฟรี`);
 
-  await createNotification(
+  await createNotificationOnce(
     {
       userId,
       type: "FANTASY_REWARD",
       title: `ได้รับรางวัล Fantasy Gameweek ${gameweekNumber}`,
       body: parts.join(" · "),
       href: "/fantasy",
+      idempotencyKey: `fantasy:reward:weekly:${gameweekId}:${userId}`,
     },
     tx,
   );
@@ -196,6 +202,37 @@ export async function createNotification(
   } catch (e) {
     console.error("createNotification failed", e);
   }
+}
+
+/**
+ * สร้างการแจ้งเตือนแบบ idempotent ผ่าน `idempotencyKey` — ใช้เฉพาะจุดที่ผูกกับ resumable operation (เช่น
+ * `runScoring` ที่ resume ได้หลัง crash) เรียกซ้ำด้วย key เดิมได้ผลลัพธ์เดียวกันเสมอ ไม่สร้างแถวซ้ำ
+ * (`update: {}` กัน retry ไป reset `read`/`createdAt` ของแถวเดิม) ต่างจาก `createNotification` ตรงที่ไม่กลืน
+ * error — ต้องเรียกใน `tx` เดียวกับ side effect หลักเสมอ เพื่อให้ transaction ทั้งก้อน rollback ถ้าเขียนไม่สำเร็จ
+ */
+export async function createNotificationOnce(
+  input: {
+    userId: string;
+    type: NotificationType;
+    title: string;
+    body?: string;
+    href?: string;
+    idempotencyKey: string;
+  },
+  tx: Prisma.TransactionClient,
+): Promise<void> {
+  await tx.notification.upsert({
+    where: { idempotencyKey: input.idempotencyKey },
+    create: {
+      userId: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      href: input.href,
+      idempotencyKey: input.idempotencyKey,
+    },
+    update: {},
+  });
 }
 
 /** จำนวนที่ยังไม่อ่าน = noti ส่วนตัวที่ยังไม่อ่าน + ข่าวที่ใหม่กว่าเวลาอ่านล่าสุด */
