@@ -70,7 +70,7 @@ model User {
   cards               UserCard[]
   squad               Squad?
   notifications       Notification[]
-  announcements       Announcement[] @relation("AnnouncementAuthor")
+  announcements       Announcement[]         @relation("AnnouncementAuthor")
   missionProgress     MissionProgress[]
   achievementProgress AchievementProgress[]
   fantasyEntries      FantasyEntry[]
@@ -255,7 +255,7 @@ model Gameweek {
   id       String   @id @default(cuid())
   number   Int      @unique
   deadline DateTime
-  monthKey String   // "YYYY-MM" UTC — derive จาก deadline ตอนสร้าง แล้ว freeze (ห้ามใช้วันที่ปิด)
+  monthKey String // "YYYY-MM" UTC — derive จาก deadline ตอนสร้าง แล้ว freeze (ห้ามใช้วันที่ปิด)
   status   String   @default("UPCOMING") // UPCOMING | LOCKED | SCORING | SCORED
 
   scoringStartedAt DateTime?
@@ -282,7 +282,7 @@ model Match {
   homeScore Int?
   awayScore Int?
   kickoffAt DateTime?
-  status    String   @default("SCHEDULED") // SCHEDULED | PLAYED | POSTPONED | CANCELLED
+  status    String    @default("SCHEDULED") // SCHEDULED | PLAYED | POSTPONED | CANCELLED
 
   providerFixtureId String? @unique // จาก API-Football — กัน sync ซ้ำ (Phase 7D)
 
@@ -299,7 +299,10 @@ model PlayerMatchStat {
   playerId String
   player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  clubSide String // HOME | AWAY — freeze ตอนกรอก ไม่ derive จาก Player.club สด
+  clubSide      String // HOME | AWAY — freeze ตอนกรอก ไม่ derive จาก Player.club สด
+  positionGroup String // GK | DEF | MID | ATT — freeze ตอนกรอกจาก Player.position ขณะนั้น (เหตุผลเดียวกับ clubSide)
+  // กัน re-import การ์ด (prisma/card-import.ts แก้ Player.position ได้) เปลี่ยนกลุ่มตำแหน่งย้อนหลังของสถิติที่กรอกไปแล้ว
+  // (เช่น TOTW ที่คำนวณคะแนน/จัดกลุ่มจากสถิติเก่า — ต้องอ่านค่านี้ ห้าม derive จาก Player.position สดตอน query)
 
   minutes  Int @default(0)
   goals    Int @default(0)
@@ -345,7 +348,7 @@ model FantasyEntrySlot {
 
   fantasyPositionGroup String // GK | DEF | MID | ATT — freeze ตอน save ห้าม derive สด
 
-  slotIndex     Int     // 0-10 = ตัวจริง, 11-14 = สำรอง
+  slotIndex     Int // 0-10 = ตัวจริง, 11-14 = สำรอง
   isStarter     Boolean
   benchPriority Int? // 1-4 สำหรับตัวสำรองเท่านั้น
   isCaptain     Boolean @default(false)

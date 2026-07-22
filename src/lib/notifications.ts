@@ -140,7 +140,7 @@ export async function notifyFantasyScore(
       type: "FANTASY_SCORE",
       title: `ผลคะแนน Fantasy Gameweek ${gameweekNumber}`,
       body: `ได้ ${points} แต้ม${rankText}`,
-      href: "/fantasy",
+      href: "/fantasy/leaderboard",
       idempotencyKey: `fantasy:score:${gameweekId}:${userId}`,
     },
     tx,
@@ -167,7 +167,7 @@ export async function notifyFantasyReward(
       type: "FANTASY_REWARD",
       title: `ได้รับรางวัล Fantasy Gameweek ${gameweekNumber}`,
       body: parts.join(" · "),
-      href: "/fantasy",
+      href: "/fantasy/leaderboard",
       idempotencyKey: `fantasy:reward:weekly:${gameweekId}:${userId}`,
     },
     tx,
@@ -312,6 +312,19 @@ export async function getNotificationCenter(userId: string): Promise<{
       createdAt: n.createdAt,
     })),
   };
+}
+
+export type NewsListItem = { id: string; title: string; body: string; createdAt: Date };
+
+/** ข่าว/ประกาศ broadcast อ่านอย่างเดียว (เช่น หน้า `/fantasy/news`) — แยกจาก `getNotificationCenter` เพราะไม่ผูก
+ * กับ `lastReadNewsAt`/mark-as-read (หน้าที่นั้นเป็นของ `/notifications` เท่านั้น) */
+export async function getNews(limit = 30): Promise<NewsListItem[]> {
+  return prisma.announcement.findMany({
+    where: { published: true },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: { id: true, title: true, body: true, createdAt: true },
+  });
 }
 
 /** ทำเครื่องหมายว่าอ่านแล้วทั้งหมด (noti ส่วนตัว + ข่าว) — เฉพาะรายการที่ถูกสร้างไม่เกิน `cutoff`

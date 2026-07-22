@@ -210,3 +210,35 @@
 - [x] **แจ้งเตือน — badge unread ไม่หายหลังอ่าน**: ต้นเหตุคือ `markAllRead()` เดิมถูกเรียกตรงจาก render ของ `src/app/notifications/page.tsx` (ไม่ใช่ Server Action) เลยไม่มี `revalidatePath` ทำให้ root layout (ที่โชว์ badge ใน `AppHeader`) ไม่เคยถูกสั่ง refresh ค่า unread แก้โดยย้ายไปเป็น Server Action `markNotificationsReadAction` (`src/app/actions/notifications.ts`) เรียกจาก client component `MarkNotificationsRead.tsx` ตอน mount + `revalidatePath("/", "layout")`
   - ระหว่างแก้ Codex เจอ race เพิ่ม: ย้ายไปทำงานหลัง client hydrate ทำให้หน้าต่าง race (แจ้งเตือนใหม่เกิดขึ้นระหว่างเปิดหน้าโดนนับว่าอ่านแล้ว) กว้างกว่าของเดิม — แก้ด้วยการ capture `cutoff` timestamp ตอน page.tsx โหลด snapshot แล้วส่งต่อไปให้ `markAllRead(userId, cutoff)` ใน `src/lib/notifications.ts` mark เฉพาะรายการที่ `createdAt <= cutoff` เท่านั้น (ทำใน `$transaction` เดียวกับการอัพเดต `lastReadNewsAt`)
   - **[ ] Known limitation ที่ยังไม่แก้ (ตัดสินใจแล้วว่าพอแค่นี้ ไม่ทำต่อตอนนี้)**: หน้า notifications โชว์แค่ 50 รายการล่าสุด/30 ข่าวล่าสุด แต่ mark-as-read (ตาม cutoff เวลา) จะปัด unread รายการเก่ากว่านั้นทั้งหมดว่าอ่านแล้วไปด้วย แม้ไม่เคยแสดงให้เห็นในหน้านั้น — เป็นพฤติกรรมเดิมที่มีอยู่ก่อนงานนี้แล้ว (ไม่ใช่ regression) ผลกระทบต่ำ (แค่ badge หายก่อนเห็น ไม่ใช่ข้อมูล/เงินหาย) จะแก้ให้ครบร้อยเปอร์เซ็นต์ต้องเปลี่ยนจาก watermark ตามเวลาเป็น read-receipt ต่อรายการจริง (schema ใหม่) — เกินสโคปที่ขอตอนนี้ รอ backlog
+
+## ขั้น 12 — Fantasy hub bento redesign + ตารางแข่ง/ข่าว/TOTW [~]
+`/fantasy` เดิม (จัดทีม+leaderboard รวมหน้าเดียว) → แยกเป็น bento hub + 5 subpage ตาม pattern เดียวกับ My Club hub (ขั้น 11) แผนวางโดย Opus แล้ว ผู้ใช้ยืนยัน: TOTW ใช้ฟอร์เมชั่น 4-3-3, ตารางแข่งโชว์แค่ GW ปัจจุบัน (ไม่มี prev/next), TOTW preview บน hub เบาๆ (ไม่คำนวณเต็มตอนเปิด hub) — implement เสร็จ ผ่าน Codex adversarial-review 4 รอบ (approve) เหลือ manual browser QA
+
+### Lib helpers ใหม่
+- [x] `getLatestScoredGameweek()` ใน `src/lib/fantasy.ts` (ย้าย logic ที่เคย inline ใน `page.tsx`)
+- [x] `getFixtures(gameweekId)` ใน `src/lib/fantasyFixtures.ts` (ใหม่) — query `Match` เดียว ไม่มี N+1
+- [x] `getTeamOfTheWeek(gameweekId)` ใน `src/lib/fantasyTotw.ts` (ใหม่) — join `PlayerMatchStat`+`Player` ครั้งเดียว, aggregate ในหน่วยความจำด้วย `scorePlayer` เดิม, sum ข้าม DGW, tie-break: points→goals→assists→minutes→playerId, จัดเป็นฟอร์เมชั่น **4-3-3** (GK×1/DEF×4/MID×3/ATT×3) ตำแหน่งไหนขาดคนปล่อยว่าง ไม่ error
+- [x] `getNews(limit=30)` ใน `src/lib/notifications.ts` — query `Announcement` published อย่างเดียว แยกจาก `getNotificationCenter`
+
+### Subpages
+- [x] `/fantasy/team` — ย้าย `FantasyPitch` + `getOrCreateEntry` จาก `/fantasy/page.tsx` เดิมมาตรงๆ (จุดเดียวที่ยังเรียก `getOrCreateEntry` ได้)
+- [x] `/fantasy/leaderboard` — ย้าย `FantasyLeaderboard` เดิมมาตรงๆ ใช้ `getLatestScoredGameweek()`
+- [x] `/fantasy/fixtures` — โชว์ตารางแข่งของ **GW ปัจจุบันเท่านั้น** (`getCurrentGameweek()`, ไม่มี prev/next) สถานะ SCHEDULED/PLAYED/POSTPONED/CANCELLED
+- [x] `/fantasy/news` — list ข่าวจาก `getNews()` อย่างเดียว read-only
+- [x] `/fantasy/totw` — โชว์ทีม 4-3-3 จาก `getTeamOfTheWeek()` ของ `getLatestScoredGameweek()` (ต้อง SCORED เท่านั้น ไม่งั้น empty state)
+
+### Hub page (`/fantasy/page.tsx` rewrite)
+- [x] Bento grid 5 การ์ด (ตารางแข่ง/จัดทีม/ข่าว/ตารางอันดับ/TOTW) สไตล์เดียวกับ `club/page.tsx`
+- [x] Preview แต่ละการ์ด **read-only ล้วน** — การ์ดจัดทีมใช้ `prisma.fantasyEntry.findUnique` (ห้าม `getOrCreateEntry`), การ์ด TOTW โชว์แค่ "GW{n} — ดูทีมยอดเยี่ยม" (ไม่เรียก `getTeamOfTheWeek` เต็มตอนเปิด hub)
+- [x] เช็ค `BottomNav.tsx` highlight แท็บ Fantasy ครอบ `/fantasy/*` ทุก subpath — ไม่ต้องแก้จริง เพราะ default `matches` ไม่ตั้งไว้ = ครอบด้วย `pathname.startsWith`
+
+### Codex review findings (4 รอบ ครบทุกจุด approve)
+- [x] **[high, รอบ 1]** `getTeamOfTheWeek` derive กลุ่มตำแหน่งจาก `Player.position` สด — `prisma/card-import.ts` แก้ตำแหน่งได้ ทำให้ re-import หลัง GW ปิดคิดคะแนนแล้วเปลี่ยน TOTW ย้อนหลัง → เพิ่ม migration `20260722123732_add_playermatchstat_position_group`: `PlayerMatchStat.positionGroup` freeze ตอนแอดมินกรอกสถิติใน `upsertPlayerStat` (pattern เดียวกับ `clubSide`) แทนการ derive สด
+- [x] **[high, รอบ 2]** Double Gameweek: นักเตะที่มี 2 แมตช์ใน GW เดียวกันอาจได้ `positionGroup` ไม่ตรงกันถ้า re-import แทรกกลางระหว่างกรอกสองแมตช์ (query ไม่มี orderBy ด้วย ทำให้ไม่ deterministic) → `upsertPlayerStat` เช็คว่าเคยมีสถิติของนักเตะคนนี้ใน gameweek เดียวกันหรือยัง (`match.gameweekId`) ถ้ามีให้ reuse `positionGroup` เดิมเสมอ ไม่ derive ใหม่
+- [x] **[medium, รอบ 2]** Migration CASE มี `ELSE 'MID'` — ตำแหน่งที่ไม่รู้จักจะถูกแปลงเป็น MID เงียบๆ → เอา ELSE ออก ให้ CASE คืน NULL แล้วชน NOT NULL constraint (migration abort ชัดเจนแทนข้อมูลเพี้ยนเงียบๆ)
+- [x] **[high, รอบ 3]** Migration backfill ใช้ `INNER JOIN Player` — แถว `PlayerMatchStat` กำพร้า (ไม่มี Player ตรงกัน) จะถูกทิ้งเงียบๆ ระหว่าง copy table → เปลี่ยนเป็น `LEFT JOIN` ให้ NULL แล้ว fail เหมือนกัน
+
+### Verify
+- [x] `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาดทุกรอบหลังแก้
+- [x] Codex adversarial-review 4 รอบ — approve รอบสุดท้าย
+- [ ] Manual browser QA ผ่าน Preview — เช็คเพิ่มจากขั้น 11: 5 การ์ดบน `/fantasy` ลิงก์ถูก, `/fantasy/fixtures` โชว์ตารางแข่ง GW ปัจจุบัน, `/fantasy/news` โชว์ข่าว, `/fantasy/totw` โชว์ทีม 4-3-3 (ต้องมี GW ที่ SCORED แล้วถึงจะเห็นข้อมูลจริง — ใช้ข้อมูลทดสอบจาก 7B QA เดิมได้), `/fantasy/team`/`/fantasy/leaderboard` ทำงานเหมือนเดิมหลังย้ายมา

@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { seasonKey } from "@/lib/pvp";
 import { GAMEWEEK_STATUS } from "@/lib/fantasyConfig";
+import { POSITION_GROUP, type Position } from "@/lib/constants";
 
 function assertNotScoredYet(status: string): void {
   if (status === GAMEWEEK_STATUS.SCORING || status === GAMEWEEK_STATUS.SCORED) {
@@ -133,8 +134,9 @@ export type PlayerStatInput = {
   ownGoals: number;
 };
 
-/** กรอกสถิตินักเตะ 1 คนต่อ 1 แมตช์ — clubSide freeze ตอนกรอก (ไม่ derive จาก Player.club สด กันย้ายทีม/แก้ชื่อสโมสร
- * ทำให้ผลเก่าเพี้ยน — สเปคหัวข้อ 8) validate ว่านักเตะอยู่สโมสรที่ตรง clubSide ที่เลือกจริง
+/** กรอกสถิตินักเตะ 1 คนต่อ 1 แมตช์ — clubSide/positionGroup freeze ตอนกรอก (ไม่ derive จาก Player.club/position สด
+ * กันย้ายทีม/แก้ชื่อสโมสร/แก้ตำแหน่ง (เช่น re-import การ์ดใน prisma/card-import.ts) ทำให้ผลเก่าเพี้ยน — สเปคหัวข้อ 8)
+ * validate ว่านักเตะอยู่สโมสรที่ตรง clubSide ที่เลือกจริง
  *
  * เช็ค Gameweek status + เขียนจริงต้องอยู่ใน `prisma.$transaction` เดียวกัน (เหตุผลเดียวกับ `upsertMatch` — ปิด
  * TOCTOU race กับ `closeGameweek`'s CAS ที่อาจ flip เป็น SCORING ระหว่างเช็คสถานะกับ upsert สถิติจริง) */
@@ -144,8 +146,9 @@ export async function upsertPlayerStat(
   clubSide: "HOME" | "AWAY",
   stat: PlayerStatInput,
 ): Promise<void> {
-  const player = await prisma.player.findUnique({ where: { id: playerId }, select: { club: true } });
+  const player = await prisma.player.findUnique({ where: { id: playerId }, select: { club: true, position: true } });
   if (!player) throw new Error("ไม่พบนักเตะนี้");
+  const livePositionGroup = POSITION_GROUP[player.position as Position];
 
   for (const [label, value] of Object.entries(stat)) {
     if (!Number.isInteger(value) || value < 0) throw new Error(`ค่า ${label} ต้องเป็นจำนวนเต็มไม่ติดลบ`);
@@ -155,7 +158,7 @@ export async function upsertPlayerStat(
   await prisma.$transaction(async (tx) => {
     const match = await tx.match.findUnique({
       where: { id: matchId },
-      select: { homeClub: true, awayClub: true, gameweek: { select: { status: true } } },
+      select: { gameweekId: true, homeClub: true, awayClub: true, gameweek: { select: { status: true } } },
     });
     if (!match) throw new Error("ไม่พบแมตช์นี้");
     assertNotScoredYet(match.gameweek.status);
@@ -165,10 +168,20 @@ export async function upsertPlayerStat(
       throw new Error(`นักเตะคนนี้ไม่ได้อยู่สโมสร ${expectedClub} (ตรง clubSide ที่เลือก)`);
     }
 
+    // นักเตะคนเดียวกันอาจมีสถิติหลายแมตช์ใน Gameweek เดียวกัน (Double Gameweek) — ต้องใช้ positionGroup เดียวกัน
+    // ทุกแมตช์ในสัปดาห์นั้นเสมอ (กันกรณี re-import แก้ Player.position คั่นกลางระหว่างกรอกสองแมตช์ ทำให้ TOTW/scoring
+    // จัดกลุ่มนักเตะคนเดียวกันไม่ตรงกันระหว่างสองแมตช์ในสัปดาห์เดียว) ถ้าเคยมีสถิติของนักเตะคนนี้ใน gameweek นี้แล้ว
+    // (ไม่ว่าแมตช์ไหน รวมถึงแมตช์นี้เองตอน update) ใช้ positionGroup ที่ freeze ไว้ก่อนหน้าซ้ำ ไม่ derive ใหม่
+    const priorStat = await tx.playerMatchStat.findFirst({
+      where: { playerId, match: { gameweekId: match.gameweekId } },
+      select: { positionGroup: true },
+    });
+    const positionGroup = priorStat?.positionGroup ?? livePositionGroup;
+
     await tx.playerMatchStat.upsert({
       where: { matchId_playerId: { matchId, playerId } },
-      create: { matchId, playerId, clubSide, ...stat },
-      update: { clubSide, ...stat },
+      create: { matchId, playerId, clubSide, positionGroup, ...stat },
+      update: { clubSide, positionGroup, ...stat },
     });
   });
 }

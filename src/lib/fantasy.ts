@@ -103,6 +103,14 @@ export async function getCurrentGameweek(now: Date = new Date()) {
   });
 }
 
+/** Gameweek ล่าสุดที่ปิดคิดคะแนนแล้ว — ใช้เป็น default ของ leaderboard/TOTW (มีสถิติจริงแล้วเท่านั้น) */
+export async function getLatestScoredGameweek() {
+  return prisma.gameweek.findFirst({
+    where: { status: GAMEWEEK_STATUS.SCORED },
+    orderBy: { number: "desc" },
+  });
+}
+
 /** ทีม Fantasy ของ user สำหรับ Gameweek นี้ — ถ้ายังไม่มี clone จาก entry ล่าสุดของ user เอง (ถ้ามี)
  * รองรับ concurrent first-load: ถ้า create ชนกับ request คู่ขนาน (unique userId+gameweekId) ให้อ่าน
  * entry ที่ถูกสร้างไปแล้วกลับมาแทนที่จะปล่อย error ทะลุขึ้นไป */
