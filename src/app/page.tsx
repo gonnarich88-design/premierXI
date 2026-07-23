@@ -215,19 +215,6 @@ async function LoggedInHome({
 
       {/* Missions */}
       <MissionList missions={missions} />
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/pack"
-          className="rounded-xl bg-primary py-4 text-center font-bold text-primary-foreground hover:bg-primary-strong"
-        >
-          เปิดซอง
-        </Link>
-        <Card hub href="/club" className="py-4 text-center font-bold">
-          My Club
-        </Card>
-      </div>
     </div>
   );
 }
