@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setTeamNameAction } from "@/app/actions/club";
+import Card from "@/components/ui/Card";
 
 export default function TeamNameEditor({ initialName }: { initialName: string | null }) {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function TeamNameEditor({ initialName }: { initialName: string | 
 
   if (!editing) {
     return (
-      <div className="surface-card flex items-center justify-between rounded-2xl p-4">
+      <Card hub className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted">ชื่อทีม</p>
           <h2 className="text-lg font-bold">{initialName ?? "ยังไม่ได้ตั้งชื่อทีม"}</h2>
@@ -37,12 +38,12 @@ export default function TeamNameEditor({ initialName }: { initialName: string | 
         >
           แก้ไข
         </button>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="surface-card rounded-2xl p-4">
+    <Card hub>
       <p className="mb-2 text-xs text-muted">ชื่อทีม (2-20 ตัวอักษร)</p>
       <input
         value={value}
@@ -71,6 +72,6 @@ export default function TeamNameEditor({ initialName }: { initialName: string | 
           ยกเลิก
         </button>
       </div>
-    </div>
+    </Card>
   );
 }

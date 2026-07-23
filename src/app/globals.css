@@ -17,6 +17,15 @@
   --card-grad-hi: #271948;
   --card-grad-lo: #120b24;
   --card-grad-angle: 45deg;
+  --bg-deep: #05040a;
+  --hub-grad-hi: #2f374c;
+  --hub-grad-mid: #252b3a;
+  --hub-grad-lo: #151821;
+  --hub-radius: 28px;
+  --hub-border: rgba(255, 255, 255, 0.06);
+  --badge-cyan: #0ea5e9;
+  --currency-gem: #34d399;
+  --currency-token: #f87171;
 }
 
 @theme inline {
@@ -32,8 +41,17 @@
   --color-accent: var(--accent);
   --color-gold: var(--gold);
   --color-silver: var(--silver);
+  --color-bg-deep: var(--bg-deep);
+  --color-hub-grad-hi: var(--hub-grad-hi);
+  --color-hub-grad-mid: var(--hub-grad-mid);
+  --color-hub-grad-lo: var(--hub-grad-lo);
+  --color-hub-border: var(--hub-border);
+  --color-badge-cyan: var(--badge-cyan);
+  --color-currency-gem: var(--currency-gem);
+  --color-currency-token: var(--currency-token);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-hub: var(--hub-radius);
   --radius-pill: 9999px;
   --radius-card: 1rem;
   --radius-field: 0.75rem;
@@ -71,6 +89,24 @@ body {
     var(--card-grad-hi) 100%
   );
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.surface-hub {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hub-radius);
+  border: 1px solid var(--hub-border);
+  background-image: linear-gradient(
+    to bottom right,
+    var(--hub-grad-hi) 0%,
+    var(--hub-grad-mid) 50%,
+    var(--hub-grad-lo) 100%
+  );
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: filter 150ms ease;
+}
+.surface-hub:hover {
+  filter: brightness(1.1);
 }
 
 .glow-primary {

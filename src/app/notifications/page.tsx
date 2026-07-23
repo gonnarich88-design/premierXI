@@ -76,8 +76,8 @@ export default async function NotificationsPage() {
 function NewsRow({ item }: { item: NewsItem }) {
   return (
     <li
-      className={`rounded-xl p-3 ${
-        item.isNew ? "border border-primary/50 bg-primary/5" : "surface-card"
+      className={`rounded-[28px] p-3 ${
+        item.isNew ? "border border-primary/50 bg-primary/5" : "surface-hub"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -108,8 +108,8 @@ function ActivityRow({ item }: { item: NotificationItem }) {
     </>
   );
 
-  const cls = `block rounded-xl p-3 ${
-    item.read ? "surface-card" : "border border-accent/40 bg-accent/5"
+  const cls = `block rounded-[28px] p-3 ${
+    item.read ? "surface-hub" : "border border-accent/40 bg-accent/5"
   }`;
 
   return (

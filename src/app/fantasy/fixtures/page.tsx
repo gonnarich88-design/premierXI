@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getCurrentGameweek } from "@/lib/fantasy";
 import { getFixtures, type Fixture } from "@/lib/fantasyFixtures";
+import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "ตารางแข่ง Fantasy · Premier XI" };
@@ -50,14 +51,13 @@ export default async function FantasyFixturesPage() {
       ) : (
         <ul className="space-y-2">
           {fixtures.map((m) => (
-            <li
-              key={m.id}
-              className="surface-card flex items-center justify-between gap-2 rounded-xl p-3 text-sm"
-            >
-              <span className="min-w-0 flex-1 truncate">{m.homeClub}</span>
-              <span className="shrink-0 text-xs text-muted">vs</span>
-              <span className="min-w-0 flex-1 truncate text-right">{m.awayClub}</span>
-              <MatchStatus m={m} />
+            <li key={m.id}>
+              <Card hub className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 flex-1 truncate">{m.homeClub}</span>
+                <span className="shrink-0 text-xs text-muted">vs</span>
+                <span className="min-w-0 flex-1 truncate text-right">{m.awayClub}</span>
+                <MatchStatus m={m} />
+              </Card>
             </li>
           ))}
         </ul>

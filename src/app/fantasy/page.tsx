@@ -34,13 +34,13 @@ export default async function FantasyPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-3">
-        <Card href="/fantasy/fixtures">
+        <Card hub href="/fantasy/fixtures">
           <h2 className="text-sm font-semibold">ตารางแข่ง</h2>
           <p className="mt-1 text-xs text-muted">{currentGw ? `GW${currentGw.number}` : "ไม่มีรอบเปิด"}</p>
           <p className="text-stat-hero mt-2 text-2xl text-accent">{currentGw ? `${matchCount} แมตช์` : "-"}</p>
         </Card>
 
-        <Card href="/fantasy/team">
+        <Card hub href="/fantasy/team">
           <h2 className="text-sm font-semibold">จัดทีม</h2>
           <p className="mt-1 text-xs text-muted">{currentGw ? `GW${currentGw.number}` : "ไม่มีรอบเปิด"}</p>
           <p className="text-stat-hero mt-2 text-2xl text-accent">
@@ -48,12 +48,12 @@ export default async function FantasyPage() {
           </p>
         </Card>
 
-        <Card href="/fantasy/news">
+        <Card hub href="/fantasy/news">
           <h2 className="text-sm font-semibold">ข่าว</h2>
           <p className="mt-1 truncate text-xs text-muted">{latestNews ? latestNews.title : "ยังไม่มีข่าว"}</p>
         </Card>
 
-        <Card href="/fantasy/leaderboard">
+        <Card hub href="/fantasy/leaderboard">
           <h2 className="text-sm font-semibold">ตารางอันดับ</h2>
           <p className="mt-1 text-xs text-muted">{lastScored ? `GW${lastScored.number}` : "ยังไม่มีผล"}</p>
           <p className="text-stat-hero mt-2 text-2xl text-accent">
@@ -61,7 +61,7 @@ export default async function FantasyPage() {
           </p>
         </Card>
 
-        <Card href="/fantasy/totw" className="col-span-2">
+        <Card hub href="/fantasy/totw" className="col-span-2">
           <h2 className="text-sm font-semibold">TOTW — ทีมยอดเยี่ยมประจำสัปดาห์</h2>
           <p className="mt-1 text-xs text-muted">
             {lastScored ? `GW${lastScored.number} — ดูทีมยอดเยี่ยม` : "ยังไม่มีผล"}

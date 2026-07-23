@@ -22,7 +22,7 @@ export function Stat({
 export function StatRow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`surface-card flex items-stretch divide-x divide-border rounded-2xl py-3 ${className}`}
+      className={`surface-hub flex items-stretch divide-x divide-border py-3 ${className}`}
     >
       {children}
     </div>

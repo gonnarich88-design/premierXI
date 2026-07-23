@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { claimMissionAction } from "@/app/actions/missions";
 import { Reward } from "@/components/DailyClaim";
+import Card from "@/components/ui/Card";
 import type { MissionStatus } from "@/lib/missions";
 
 export default function MissionList({ missions }: { missions: MissionStatus[] }) {
@@ -11,7 +12,7 @@ export default function MissionList({ missions }: { missions: MissionStatus[] })
   const weekly = missions.filter((m) => m.period === "weekly");
 
   return (
-    <div className="surface-card rounded-2xl p-4">
+    <Card hub>
       <h2 className="mb-2 font-bold">มิชชั่นวันนี้</h2>
       <div className="space-y-2">
         {daily.map((m) => (
@@ -25,7 +26,7 @@ export default function MissionList({ missions }: { missions: MissionStatus[] })
           <MissionRow key={m.key} mission={m} />
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 

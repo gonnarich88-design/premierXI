@@ -39,7 +39,7 @@ export default async function ClubPage() {
       <TeamNameEditor initialName={user.teamName} />
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Card href="/team">
+        <Card hub href="/team">
           <h2 className="text-sm font-semibold">จัดทีม</h2>
           <p className="mt-1 text-xs text-muted">
             {squad.formation} · {chem.filled}/11 · Chemistry {chem.teamChem}/33
@@ -47,7 +47,7 @@ export default async function ClubPage() {
           <p className="text-stat-hero mt-2 text-2xl text-accent">{chem.rating || "-"}</p>
         </Card>
 
-        <Card href="/collection">
+        <Card hub href="/collection">
           <h2 className="text-sm font-semibold">คลังการ์ด</h2>
           <p className="mt-1 text-xs text-muted">การ์ดทั้งหมดที่มี</p>
           <p className="text-stat-hero mt-2 text-2xl text-accent">{cardCount} ใบ</p>

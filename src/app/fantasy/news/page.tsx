@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getNews } from "@/lib/notifications";
+import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "ข่าว Fantasy · Premier XI" };
@@ -33,10 +34,12 @@ export default async function FantasyNewsPage() {
       ) : (
         <ul className="space-y-2">
           {news.map((n) => (
-            <li key={n.id} className="surface-card rounded-xl p-3">
-              <h3 className="font-semibold">{n.title}</h3>
-              <p className="mt-1 whitespace-pre-line text-sm text-muted">{n.body}</p>
-              <p className="mt-2 text-[11px] text-muted">{timeAgo(n.createdAt)}</p>
+            <li key={n.id}>
+              <Card hub>
+                <h3 className="font-semibold">{n.title}</h3>
+                <p className="mt-1 whitespace-pre-line text-sm text-muted">{n.body}</p>
+                <p className="mt-2 text-[11px] text-muted">{timeAgo(n.createdAt)}</p>
+              </Card>
             </li>
           ))}
         </ul>

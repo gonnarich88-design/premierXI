@@ -38,12 +38,12 @@ function GuestHome() {
   return (
     <section className="space-y-4">
 
-      <div className="surface-card rounded-2xl p-6 text-center">
+      <Card hub className="p-6 text-center">
         <h2 className="text-lg font-bold">ยินดีต้อนรับสู่ Premier XI</h2>
         <p className="mt-2 text-sm text-muted">
           สมัครสมาชิกเพื่อรับ Starter Pack ฟรี แล้วเริ่มสะสมการ์ดนักเตะได้เลย
         </p>
-      </div>
+      </Card>
       <div className="grid grid-cols-2 gap-3">
         <Button href="/register" variant="gradient" size="lg">
           สมัครสมาชิก
@@ -147,17 +147,17 @@ async function LoggedInHome({
 
       {/* Shortcut cards: My Club / PvP / Fantasy */}
       <div className="grid grid-cols-3 gap-2">
-        <Card href="/club" className="text-center">
+        <Card hub href="/club" className="text-center">
           <p className="text-xs font-semibold">My Club</p>
           <p className="text-stat-hero mt-1 text-lg text-accent">{chem.rating || "-"}</p>
           <p className="text-[10px] text-muted">Chem {chem.teamChem}/33</p>
         </Card>
-        <Card href="/pvp" className="text-center">
+        <Card hub href="/pvp" className="text-center">
           <p className="text-xs font-semibold">PvP</p>
           <p className="text-stat-hero mt-1 text-lg text-accent">{pvpStatus.matchesRemaining}</p>
           <p className="text-[10px] text-muted">แมตช์เหลือวันนี้</p>
         </Card>
-        <Card href="/fantasy" className="text-center">
+        <Card hub href="/fantasy" className="text-center">
           <p className="text-xs font-semibold">Fantasy</p>
           <p className="text-stat-hero mt-1 text-lg text-accent">
             {!currentGameweek ? "-" : myEntry?.submittedAt ? "ส่งแล้ว" : "ยังไม่ส่ง"}
@@ -169,7 +169,7 @@ async function LoggedInHome({
       </div>
 
       {/* Level / EXP */}
-      <div className="surface-card rounded-2xl p-4">
+      <Card hub>
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-bold text-primary">Level {user.level}</span>
           <span className="text-muted">
@@ -182,7 +182,7 @@ async function LoggedInHome({
             style={{ width: `${pct}%` }}
           />
         </div>
-      </div>
+      </Card>
 
       {/* Starter Pack — ยังไม่เปิด */}
       {!user.starterClaimed && (
@@ -224,12 +224,9 @@ async function LoggedInHome({
         >
           เปิดซอง
         </Link>
-        <Link
-          href="/club"
-          className="surface-card rounded-xl py-4 text-center font-bold transition hover:brightness-110"
-        >
+        <Card hub href="/club" className="py-4 text-center font-bold">
           My Club
-        </Link>
+        </Card>
       </div>
     </div>
   );

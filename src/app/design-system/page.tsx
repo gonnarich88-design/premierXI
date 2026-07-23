@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 const CURRENCIES = [
-  { value: 0, icon: CoinIcon, color: "#f5c451" },
-  { value: 0, icon: GemIcon, color: "#34d399" },
-  { value: 0, icon: TokenIcon, color: "#f87171" },
+  { value: 0, icon: CoinIcon, color: "var(--gold)" },
+  { value: 0, icon: GemIcon, color: "var(--currency-gem)" },
+  { value: 0, icon: TokenIcon, color: "var(--currency-token)" },
 ];
 
 const CARDS = [
@@ -30,28 +30,28 @@ const COLORS = [
   { name: "silver", var: "--silver" },
 ];
 
-const HUB_CARD =
-  "relative overflow-hidden rounded-[28px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] shadow-lg shadow-black/30 transition hover:brightness-110";
-
 export default function DesignSystemPage() {
   return (
     <div
       className="-mx-4 -mt-6 min-h-[calc(100dvh-4rem)] px-4 pt-4 pb-20"
-      style={{ background: "radial-gradient(120% 60% at 50% -10%, rgba(76, 29, 149, 0.35), #05040a 60%)" }}
+      style={{
+        background:
+          "radial-gradient(120% 60% at 50% -10%, rgba(139, 92, 246, 0.35), var(--bg-deep) 60%)",
+      }}
     >
       {/* App-style header */}
       <header className="mb-3 flex items-center justify-between py-2">
         <button
           aria-label="Settings"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-foreground/90 hover:bg-white/10"
         >
           <GearIcon />
         </button>
-        <h1 className="text-lg font-bold text-white">Design System</h1>
+        <h1 className="text-lg font-bold text-foreground">Design System</h1>
         <Link
           href="/collection"
           aria-label="Collection"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-foreground/90 hover:bg-white/10"
         >
           <BagIcon />
         </Link>
@@ -60,7 +60,7 @@ export default function DesignSystemPage() {
       {/* Currency row */}
       <div className="mb-4 flex justify-end gap-4">
         {CURRENCIES.map((c, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-sm font-bold text-white">
+          <div key={i} className="flex items-center gap-1.5 text-sm font-bold text-foreground">
             <c.icon color={c.color} />
             <span>{c.value.toLocaleString()}</span>
           </div>
@@ -68,15 +68,15 @@ export default function DesignSystemPage() {
       </div>
 
       {/* Hero card */}
-      <div className={`${HUB_CARD} mb-4 aspect-[16/10]`}>
-        <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-violet-600/30 blur-3xl" />
-        <div className="absolute -bottom-8 -left-8 h-48 w-48 rounded-full bg-teal-500/20 blur-3xl" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+      <div className="surface-hub mb-4 aspect-[16/10]">
+        <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
+        <div className="absolute -bottom-8 -left-8 h-48 w-48 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.07] via-transparent to-transparent" />
 
-        <span className="absolute left-5 top-5 z-10 text-xl font-bold text-white">Premier XI</span>
-        <span className="absolute bottom-5 left-5 z-10 rounded-full bg-[#0ea5e9] px-3.5 py-1.5 text-xs font-extrabold text-[#05040a]">
+        <span className="absolute left-5 top-5 z-10 text-xl font-bold text-foreground">Premier XI</span>
+        <span className="absolute bottom-5 left-5 z-10 rounded-full bg-badge-cyan px-3.5 py-1.5 text-xs font-extrabold text-bg-deep">
           Design Reference
         </span>
       </div>
@@ -87,17 +87,17 @@ export default function DesignSystemPage() {
           <Link
             key={card.title}
             href={card.href}
-            className={`group ${HUB_CARD} flex flex-col justify-between p-4 ${
+            className={`group surface-hub flex flex-col justify-between p-4 ${
               card.full ? "col-span-2 aspect-[2.2/1]" : "aspect-square"
             }`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.07] via-transparent to-transparent" />
-            <span className="relative z-10 text-sm font-bold text-white">{card.title}</span>
+            <span className="relative z-10 text-sm font-bold text-foreground">{card.title}</span>
             <div className="relative z-10 flex flex-1 items-center justify-center">
-              <card.icon className="h-14 w-14 text-white/90 transition group-hover:scale-105" />
+              <card.icon className="h-14 w-14 text-foreground/90 transition group-hover:scale-105" />
             </div>
             {card.badge ? (
-              <span className="relative z-10 self-start rounded-full bg-[#0ea5e9] px-2.5 py-1 text-[10px] font-extrabold text-[#05040a]">
+              <span className="relative z-10 self-start rounded-full bg-badge-cyan px-2.5 py-1 text-[10px] font-extrabold text-bg-deep">
                 {card.badge} items
               </span>
             ) : (
@@ -114,7 +114,7 @@ export default function DesignSystemPage() {
             <div
               key={c.name}
               className="rounded-2xl p-3 text-xs font-semibold"
-              style={{ backgroundColor: `var(${c.var})`, color: c.name === "foreground" || c.name === "gold" || c.name === "silver" ? "#05040a" : "#f4f1fb" }}
+              style={{ backgroundColor: `var(${c.var})`, color: c.name === "foreground" || c.name === "gold" || c.name === "silver" ? "var(--bg-deep)" : "var(--foreground)" }}
             >
               {c.name}
             </div>
@@ -123,34 +123,34 @@ export default function DesignSystemPage() {
       </Section>
 
       <Section title="Typography" id="typography">
-        <div className="space-y-2 rounded-[24px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] p-4">
-          <p className="text-3xl font-extrabold tracking-tight text-transparent bg-gradient-to-r from-[#c084fc] to-[#8b5cf6] bg-clip-text">
+        <div className="space-y-2 surface-hub rounded-[24px] p-4">
+          <p className="text-3xl font-extrabold tracking-tight text-transparent bg-gradient-to-r from-accent to-primary bg-clip-text">
             Display
           </p>
-          <p className="text-stat-hero text-2xl text-white">Stat Hero 88</p>
+          <p className="text-stat-hero text-2xl text-foreground">Stat Hero 88</p>
           <p className="text-stat-label">Stat Label</p>
-          <p className="text-xl font-bold text-white">Title</p>
-          <p className="text-sm text-white/80">Body</p>
-          <p className="text-xs text-white/50">Muted</p>
+          <p className="text-xl font-bold text-foreground">Title</p>
+          <p className="text-sm text-foreground/80">Body</p>
+          <p className="text-xs text-foreground/50">Muted</p>
         </div>
       </Section>
 
       <Section title="Components" id="components">
-        <div className="space-y-3 rounded-[24px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] p-4">
+        <div className="space-y-3 surface-hub rounded-[24px] p-4">
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] px-4 py-2 text-sm font-bold text-white">Gradient</span>
-            <span className="rounded-full border border-[#8b5cf6] px-4 py-2 text-sm font-bold text-[#8b5cf6]">Outline</span>
-            <span className="rounded-xl bg-[#8b5cf6] px-4 py-2 text-sm font-bold text-white">Solid</span>
-            <span className="rounded-xl px-4 py-2 text-sm font-bold text-white/60 hover:text-white">Ghost</span>
+            <span className="rounded-full bg-gradient-to-r from-primary to-primary-strong px-4 py-2 text-sm font-bold text-primary-foreground">Gradient</span>
+            <span className="rounded-full border border-primary px-4 py-2 text-sm font-bold text-primary">Outline</span>
+            <span className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Solid</span>
+            <span className="rounded-xl px-4 py-2 text-sm font-bold text-muted hover:text-foreground">Ghost</span>
           </div>
-          <div className="rounded-2xl border border-[#362358] bg-[#1a0f33]/60 p-3 text-sm text-white/80">Card surface</div>
-          <div className="flex divide-x divide-[#362358] rounded-2xl border border-[#362358] bg-[#1a0f33]/60 py-3">
+          <div className="surface-card rounded-2xl p-3 text-sm text-foreground/80">Card surface</div>
+          <div className="surface-card flex divide-x divide-border rounded-2xl border border-border py-3">
             <div className="flex flex-1 flex-col items-center gap-0.5 px-2">
-              <span className="text-stat-hero text-2xl text-white">88</span>
+              <span className="text-stat-hero text-2xl text-foreground">88</span>
               <span className="text-stat-label">Rating</span>
             </div>
             <div className="flex flex-1 flex-col items-center gap-0.5 px-2">
-              <span className="text-stat-hero text-2xl text-white">12</span>
+              <span className="text-stat-hero text-2xl text-foreground">12</span>
               <span className="text-stat-label">Wins</span>
             </div>
           </div>
@@ -159,32 +159,32 @@ export default function DesignSystemPage() {
 
       <Section title="Motion" id="motion">
         <div className="flex gap-3">
-          <div className="pack-shake rounded-[20px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] px-5 py-3 text-sm font-semibold text-white">
+          <div className="pack-shake surface-hub rounded-[20px] px-5 py-3 text-sm font-semibold text-foreground">
             Pack Shake
           </div>
-          <div className="card-reveal rounded-[20px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] px-5 py-3 text-sm font-semibold text-white">
+          <div className="card-reveal surface-hub rounded-[20px] px-5 py-3 text-sm font-semibold text-foreground">
             Card Reveal
           </div>
         </div>
       </Section>
 
       <Section title="Icons" id="icons">
-        <div className="flex flex-wrap gap-4 rounded-[24px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] p-4">
-          <GearIcon className="h-8 w-8 text-white" />
-          <BagIcon className="h-8 w-8 text-white" />
-          <PaletteIcon className="h-8 w-8 text-white" />
-          <TypeIcon className="h-8 w-8 text-white" />
-          <LayersIcon className="h-8 w-8 text-white" />
+        <div className="flex flex-wrap gap-4 surface-hub rounded-[24px] p-4">
+          <GearIcon className="h-8 w-8 text-foreground" />
+          <BagIcon className="h-8 w-8 text-foreground" />
+          <PaletteIcon className="h-8 w-8 text-foreground" />
+          <TypeIcon className="h-8 w-8 text-foreground" />
+          <LayersIcon className="h-8 w-8 text-foreground" />
         </div>
       </Section>
 
       <Section title="Patterns" id="patterns">
         <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 rounded-[24px] border border-white/[0.06] bg-gradient-to-br from-[#2f374c] via-[#252b3a] to-[#151821] p-4">
-            <span className="text-sm font-bold text-white">Bento Hub</span>
+          <div className="col-span-2 surface-hub rounded-[24px] p-4">
+            <span className="text-sm font-bold text-foreground">Bento Hub</span>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              <div className="aspect-square rounded-2xl bg-[#0f111a]" />
-              <div className="aspect-square rounded-2xl bg-[#0f111a]" />
+              <div className="aspect-square rounded-2xl bg-bg-deep" />
+              <div className="aspect-square rounded-2xl bg-bg-deep" />
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function DesignSystemPage() {
 function Section({ title, id, children }: { title: string; id: string; children: ReactNode }) {
   return (
     <section id={id} className="mt-8">
-      <h2 className="mb-3 text-lg font-bold text-white">{title}</h2>
+      <h2 className="mb-3 text-lg font-bold text-foreground">{title}</h2>
       {children}
     </section>
   );

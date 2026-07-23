@@ -172,7 +172,7 @@ export default function PackShop({
           return (
             <div
               key={pack.id}
-              className="surface-card rounded-2xl p-4"
+              className="surface-hub p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

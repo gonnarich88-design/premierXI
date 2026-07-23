@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import PlayerCard from "@/components/PlayerCard";
+import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 
 export default async function CollectionPage() {
@@ -24,13 +25,13 @@ export default async function CollectionPage() {
       />
 
       {cards.length === 0 ? (
-        <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
+        <Card hub className="p-6 text-center text-sm text-muted">
           ยังไม่มีการ์ด — ไปที่หน้า{" "}
           <Link href="/pack" className="text-accent">
             เปิดซอง
           </Link>{" "}
           เพื่อเริ่มสะสม
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {cards.map((uc) => (

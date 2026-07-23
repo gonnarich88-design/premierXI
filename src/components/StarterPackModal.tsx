@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function StarterPackModal() {
   const router = useRouter();
@@ -14,9 +15,9 @@ export default function StarterPackModal() {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6"
       onClick={() => setOpen(false)}
     >
-      <div
-        className="surface-card relative w-full max-w-xs rounded-2xl border border-accent p-6 text-center shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+      <Card
+        hub
+        className="relative w-full max-w-xs border border-accent p-6 text-center shadow-xl"
       >
         <button
           type="button"
@@ -44,7 +45,7 @@ export default function StarterPackModal() {
         >
           ไปเปิดการ์ด
         </button>
-      </div>
+      </Card>
     </div>
   );
 }

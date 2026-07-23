@@ -181,7 +181,60 @@ Pattern ที่มีอยู่แล้วใน `club/page.tsx` และ 
 
 ---
 
-## 6. Deferred / นอกสโคปตอนนี้
+## 6. Design System Reference Page — Hub Theme (2026-07-23)
+
+หน้า `/design-system` เป็น living reference ของธีมปัจจุบัน โดยมีลักษณะเป็น **Club/Hub screen** ตามรูปตัวอย่าง EA Sports FC Companion App ที่ผู้ใช้ส่งมา:
+
+### 6.1 Tokens เพิ่มเติม
+
+| Token | ค่า | ใช้ทำอะไร |
+|---|---|---|
+| `--bg-deep` | `#05040a` | พื้นหลังจุดที่ต้องการความเข้มกว่า `--background` (หน้า hub / design-system page) |
+| `--hub-grad-hi` | `#2f374c` | สีสว่างสุดของ gradient การ์ด (มุมขวาบน) |
+| `--hub-grad-mid` | `#252b3a` | สีกลาง gradient การ์ด |
+| `--hub-grad-lo` | `#151821` | สีเข้มสุดของ gradient การ์ด (มุมซ้ายล่าง) |
+| `--hub-radius` | `28px` | ความมนของ hub card (ใหญ่กว่า `--radius-card`) |
+| `--hub-border` | `rgba(255,255,255,0.06)` | ขอบจางของ hub card |
+| `--badge-cyan` | `#0ea5e9` | badge สีฟ้า-เขียวมะนาวของ hub card |
+| `--currency-gem` | `#34d399` | ไอคอน currency สีเขียว |
+| `--currency-token` | `#f87171` | ไอคอน currency สีแดง |
+
+### 6.2 Utility `.surface-hub`
+
+```css
+.surface-hub {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hub-radius);
+  border: 1px solid var(--hub-border);
+  background-image: linear-gradient(
+    to bottom right,
+    var(--hub-grad-hi) 0%,
+    var(--hub-grad-mid) 50%,
+    var(--hub-grad-lo) 100%
+  );
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: filter 150ms ease;
+}
+.surface-hub:hover {
+  filter: brightness(1.1);
+}
+```
+
+สามารถซ้อน gradient overlay `from-white/[0.07]` ด้านบนซ้ายเพื่อเพิ่ม sheen ได้ตามต้องการ
+
+### 6.3 Hub Card pattern
+
+- การ์ดเป็นลิงก์ได้ (`href`) หรือ static container
+- โครงสร้าง: `title` มุมซ้ายบน · ไอคอนสีขาวใหญ่กลางการ์ด · badge สี cyan มุมซ้ายล่าง (ถ้ามีจำนวน items)
+- ไม่ใช้ border หนา — แยกการ์ดออกจากพื้นหลังด้วย gradient + shadow + hairline border จาง
+
+### 6.4 Header / Currency Row
+
+- Header แบบ app: ไอคอน settings ซ้าย · ชื่อหน้ากลาง · ไอคอน collection/bag ขวา
+- Currency row ชิดขวา: ไอคอนกลมเล็ก + ตัวเลข เรียงกัน 3 สกุล (gold / gem / token)
+
+## 7. Deferred / นอกสโคปตอนนี้
 
 - **หน้า player detail (Overview/Stats tab ตามรูปตัวอย่าง Screen 2)** — ฟีเจอร์ใหม่ทั้งหน้า ไม่ใช่ reskin (route+query ใหม่) ตัดสินใจแยกออกไปทำหลัง primitive เสร็จ (จะเร็วกว่าเพราะมี `Stat`/`Tabs` ให้ประกอบแล้ว) หมายเหตุสำคัญ: ค่า PAC/SHO/PAS/DRI/DEF/PHY ที่จะโชว์เป็นเลข **derive จาก OVR** (`src/lib/cardgen.ts::generateStats`) ไม่ใช่ scouting data จริงต่อนักเตะแต่ละคน — ต้องสื่อสารตรงนี้ให้ชัดถ้าทำหน้านี้ในอนาคต
 - **รูปถ่ายแอ็คชั่นนักเตะจริง** สำหรับ hero — ไม่มีตอนนี้ เตรียม slot ไว้ตาม §3.1 เฉยๆ

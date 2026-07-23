@@ -21,7 +21,7 @@ const ChevronIcon = () => (
 export default function ListRow({ title, subtitle, imageUrl, href, trailing, className = "" }: Props) {
   const body = (
     <div
-      className={`surface-card flex items-center gap-3 rounded-2xl p-3 transition hover:brightness-110 ${className}`}
+      className={`surface-hub flex items-center gap-3 p-3 ${className}`}
     >
       <Avatar imageUrl={imageUrl} alt={title} />
       <div className="min-w-0 flex-1">

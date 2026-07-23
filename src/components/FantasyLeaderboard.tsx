@@ -1,4 +1,5 @@
 // src/components/FantasyLeaderboard.tsx
+import Card from "@/components/ui/Card";
 import type { LeaderboardRow } from "@/lib/fantasy";
 
 export default function FantasyLeaderboard({
@@ -15,7 +16,7 @@ export default function FantasyLeaderboard({
   const myRowInTop = rows.some((r) => r.userId === myUserId);
 
   return (
-    <div className="surface-card mt-6 rounded-xl p-4">
+    <Card hub className="mt-6 p-4">
       <h2 className="mb-3 text-sm font-semibold">Weekly Leaderboard — Gameweek {gameweekNumber}</h2>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">ยังไม่มีผลคะแนน</p>
@@ -52,6 +53,6 @@ export default function FantasyLeaderboard({
           <span>{myRow.points} แต้ม</span>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

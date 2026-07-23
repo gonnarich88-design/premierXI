@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
+import Card from "@/components/ui/Card";
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -33,36 +33,24 @@ export default async function ProfilePage() {
         {user.isAdmin && <Info label="สิทธิ์" value="Admin" />}
       </div>
 
-      <Link
-        href="/collection"
-        className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
-      >
+      <Card hub href="/collection" className="mb-3 block w-full py-3 text-center font-semibold">
         ดูคลังการ์ดทั้งหมด
-      </Link>
+      </Card>
 
-      <Link
-        href="/achievements"
-        className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
-      >
+      <Card hub href="/achievements" className="mb-3 block w-full py-3 text-center font-semibold">
         Achievement
-      </Link>
+      </Card>
 
       {user.isAdmin && (
-        <Link
-          href="/admin/news"
-          className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
-        >
+        <Card hub href="/admin/news" className="mb-3 block w-full py-3 text-center font-semibold">
           จัดการข่าว (Admin)
-        </Link>
+        </Card>
       )}
 
       {user.isAdmin && (
-        <Link
-          href="/admin/fantasy"
-          className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
-        >
+        <Card hub href="/admin/fantasy" className="mb-3 block w-full py-3 text-center font-semibold">
           จัดการ Fantasy (Admin)
-        </Link>
+        </Card>
       )}
 
       <form action={logoutAction}>
@@ -79,9 +67,9 @@ export default async function ProfilePage() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="surface-card rounded-xl p-3">
+    <Card hub className="p-3">
       <div className="text-xs text-muted">{label}</div>
       <div className="mt-0.5 font-bold">{value}</div>
-    </div>
+    </Card>
   );
 }

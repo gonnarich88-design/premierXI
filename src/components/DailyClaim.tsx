@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { claimDailyAction } from "@/app/actions/daily";
+import Card from "@/components/ui/Card";
 import { LOGIN_MILESTONES, type DailyReward, type MilestoneReward } from "@/lib/daily";
 
 const MILESTONE_LABEL: Record<string, string> = {
@@ -54,7 +55,7 @@ export default function DailyClaim({
   const upcoming = nextMilestone(totalLogins);
 
   return (
-    <div className="surface-card rounded-2xl p-4">
+    <Card hub>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-bold">เช็คอินรายวัน</h2>
@@ -108,7 +109,7 @@ export default function DailyClaim({
           {error}
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 
