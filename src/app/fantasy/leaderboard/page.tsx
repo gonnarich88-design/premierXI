@@ -1,9 +1,9 @@
 // src/app/fantasy/leaderboard/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getLatestScoredGameweek, getLeaderboard, getMyLeaderboardRow } from "@/lib/fantasy";
 import FantasyLeaderboard from "@/components/FantasyLeaderboard";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "ตารางอันดับ Fantasy · Premier XI" };
 
@@ -15,9 +15,7 @@ export default async function FantasyLeaderboardPage() {
 
   return (
     <div className="px-3 pt-3 pb-6">
-      <Link href="/fantasy" className="text-sm text-primary">
-        ← กลับ
-      </Link>
+      <PageHeader title="ตารางอันดับ" backHref="/fantasy" />
 
       {lastScored ? (
         <FantasyLeaderboard

@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import type { AuthState } from "@/app/actions/auth";
+import Button from "@/components/ui/Button";
 
 type Props = {
   mode: "login" | "register";
@@ -58,32 +58,19 @@ export default function AuthForm({ mode, action }: Props) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-xl bg-primary py-3 font-bold text-primary-foreground transition hover:bg-primary-strong disabled:opacity-60"
-        >
+        <Button type="submit" variant="gradient" size="lg" disabled={pending} className="w-full">
           {pending ? "กำลังดำเนินการ..." : isRegister ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-        </button>
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        {isRegister ? (
-          <>
-            มีบัญชีแล้ว?{" "}
-            <Link href="/login" className="font-semibold text-accent">
-              เข้าสู่ระบบ
-            </Link>
-          </>
-        ) : (
-          <>
-            ยังไม่มีบัญชี?{" "}
-            <Link href="/register" className="font-semibold text-accent">
-              สมัครสมาชิก
-            </Link>
-          </>
-        )}
-      </p>
+      <Button
+        href={isRegister ? "/login" : "/register"}
+        variant="outline"
+        size="lg"
+        className="mt-3 w-full"
+      >
+        {isRegister ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+      </Button>
     </div>
   );
 }

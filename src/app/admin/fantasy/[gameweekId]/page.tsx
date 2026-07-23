@@ -46,7 +46,7 @@ export default async function AdminGameweekDetailPage({
       )}
 
       {!locked && (
-        <form action={upsertMatchAction} className="mb-6 space-y-3 rounded-xl border border-border bg-surface/60 p-4">
+        <form action={upsertMatchAction} className="surface-card mb-6 space-y-3 rounded-xl p-4">
           <input type="hidden" name="gameweekId" value={gameweekId} />
           <h2 className="text-sm font-semibold">เพิ่มแมตช์ใหม่</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -132,7 +132,7 @@ async function MatchCard({ gameweekId, match, locked }: { gameweekId: string; ma
   );
 
   return (
-    <div className="mb-6 rounded-xl border border-border bg-surface/60 p-4">
+    <div className="surface-card mb-6 rounded-xl p-4">
       <h2 className="mb-3 font-semibold">
         {match.homeClub} vs {match.awayClub}
       </h2>

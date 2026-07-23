@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { playPvpMatchAction } from "@/app/actions/pvp";
 import type { PvpStatus, PvpMatchResult } from "@/lib/pvp";
+import Button from "@/components/ui/Button";
 
 const TIER_COLOR: Record<string, string> = {
   bronze: "#a97142",
@@ -64,7 +65,7 @@ export default function PvpMatch({ status }: { status: PvpStatus }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4">
+      <div className="surface-card rounded-2xl p-4">
         <div className="flex items-center justify-between">
           <div>
             <span
@@ -91,19 +92,21 @@ export default function PvpMatch({ status }: { status: PvpStatus }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={play}
         disabled={pending || !squadReady || !canAfford}
-        className="w-full rounded-xl bg-primary py-4 text-lg font-bold text-primary-foreground transition hover:bg-primary-strong disabled:opacity-40"
+        variant="gradient"
+        size="lg"
+        className="text-lg"
       >
         {pending ? "..." : needsTicket ? "ซื้อ Match Ticket (3 Gold) แล้วแข่ง" : "แข่งเลย"}
-      </button>
+      </Button>
 
       {error && <p className="text-sm text-red-300">{error}</p>}
 
       {result && (
-        <div className="rounded-2xl border border-border bg-surface p-4">
-          <p className="text-center text-2xl font-bold">
+        <div className="surface-card rounded-2xl p-4">
+          <p className="text-stat-hero text-center text-2xl">
             {result.myGoals} - {result.oppGoals}
           </p>
           <p className="text-center text-sm text-muted">

@@ -1,9 +1,9 @@
 // src/app/fantasy/fixtures/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getCurrentGameweek } from "@/lib/fantasy";
 import { getFixtures, type Fixture } from "@/lib/fantasyFixtures";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "ตารางแข่ง Fantasy · Premier XI" };
 
@@ -38,13 +38,10 @@ export default async function FantasyFixturesPage() {
 
   return (
     <div className="px-4 pt-3 pb-6">
-      <Link href="/fantasy" className="text-sm text-primary">
-        ← กลับ
-      </Link>
-
-      <h1 className="mb-4 mt-3 text-lg font-bold">
-        ตารางแข่ง{gameweek ? ` — Gameweek ${gameweek.number}` : ""}
-      </h1>
+      <PageHeader
+        title={`ตารางแข่ง${gameweek ? ` — Gameweek ${gameweek.number}` : ""}`}
+        backHref="/fantasy"
+      />
 
       {!gameweek ? (
         <p className="mt-10 text-center text-sm text-muted">ยังไม่มี Gameweek เปิดตอนนี้</p>
@@ -55,7 +52,7 @@ export default async function FantasyFixturesPage() {
           {fixtures.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface/60 p-3 text-sm"
+              className="surface-card flex items-center justify-between gap-2 rounded-xl p-3 text-sm"
             >
               <span className="min-w-0 flex-1 truncate">{m.homeClub}</span>
               <span className="shrink-0 text-xs text-muted">vs</span>

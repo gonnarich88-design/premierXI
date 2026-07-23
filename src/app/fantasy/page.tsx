@@ -1,10 +1,10 @@
 // src/app/fantasy/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentGameweek, getLatestScoredGameweek, getMyLeaderboardRow } from "@/lib/fantasy";
 import { getNews } from "@/lib/notifications";
+import Card from "@/components/ui/Card";
 
 export default async function FantasyPage() {
   const userId = await getSessionUserId();
@@ -34,54 +34,39 @@ export default async function FantasyPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/fantasy/fixtures"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/fantasy/fixtures">
           <h2 className="text-sm font-semibold">ตารางแข่ง</h2>
           <p className="mt-1 text-xs text-muted">{currentGw ? `GW${currentGw.number}` : "ไม่มีรอบเปิด"}</p>
-          <p className="mt-2 text-2xl font-bold text-accent">{currentGw ? `${matchCount} แมตช์` : "-"}</p>
-        </Link>
+          <p className="text-stat-hero mt-2 text-2xl text-accent">{currentGw ? `${matchCount} แมตช์` : "-"}</p>
+        </Card>
 
-        <Link
-          href="/fantasy/team"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/fantasy/team">
           <h2 className="text-sm font-semibold">จัดทีม</h2>
           <p className="mt-1 text-xs text-muted">{currentGw ? `GW${currentGw.number}` : "ไม่มีรอบเปิด"}</p>
-          <p className="mt-2 text-2xl font-bold text-accent">
+          <p className="text-stat-hero mt-2 text-2xl text-accent">
             {!currentGw ? "-" : myEntry?.submittedAt ? "ส่งแล้ว" : "ยังไม่ส่ง"}
           </p>
-        </Link>
+        </Card>
 
-        <Link
-          href="/fantasy/news"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/fantasy/news">
           <h2 className="text-sm font-semibold">ข่าว</h2>
           <p className="mt-1 truncate text-xs text-muted">{latestNews ? latestNews.title : "ยังไม่มีข่าว"}</p>
-        </Link>
+        </Card>
 
-        <Link
-          href="/fantasy/leaderboard"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/fantasy/leaderboard">
           <h2 className="text-sm font-semibold">ตารางอันดับ</h2>
           <p className="mt-1 text-xs text-muted">{lastScored ? `GW${lastScored.number}` : "ยังไม่มีผล"}</p>
-          <p className="mt-2 text-2xl font-bold text-accent">
+          <p className="text-stat-hero mt-2 text-2xl text-accent">
             {myRow ? `อันดับ ${myRow.rank ?? "-"}` : "-"}
           </p>
-        </Link>
+        </Card>
 
-        <Link
-          href="/fantasy/totw"
-          className="col-span-2 rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/fantasy/totw" className="col-span-2">
           <h2 className="text-sm font-semibold">TOTW — ทีมยอดเยี่ยมประจำสัปดาห์</h2>
           <p className="mt-1 text-xs text-muted">
             {lastScored ? `GW${lastScored.number} — ดูทีมยอดเยี่ยม` : "ยังไม่มีผล"}
           </p>
-        </Link>
+        </Card>
       </div>
     </div>
   );

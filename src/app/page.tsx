@@ -11,6 +11,9 @@ import { FORMATIONS } from "@/lib/formations";
 import { computeChemistry, type ChemEntry } from "@/lib/chemistry";
 import { getPvpStatus } from "@/lib/pvp";
 import { getCurrentGameweek } from "@/lib/fantasy";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import { Stat, StatRow } from "@/components/ui/Stat";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -34,25 +37,20 @@ export default async function HomePage() {
 function GuestHome() {
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-6 text-center">
+
+      <div className="surface-card rounded-2xl p-6 text-center">
         <h2 className="text-lg font-bold">ยินดีต้อนรับสู่ Premier XI</h2>
         <p className="mt-2 text-sm text-muted">
           สมัครสมาชิกเพื่อรับ Starter Pack ฟรี แล้วเริ่มสะสมการ์ดนักเตะได้เลย
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/register"
-          className="rounded-xl bg-primary py-3 text-center font-bold text-primary-foreground hover:bg-primary-strong"
-        >
+        <Button href="/register" variant="gradient" size="lg">
           สมัครสมาชิก
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-xl border border-border bg-surface py-3 text-center font-bold hover:border-primary"
-        >
+        </Button>
+        <Button href="/login" variant="outline" size="lg">
           เข้าสู่ระบบ
-        </Link>
+        </Button>
       </div>
 
       {/* TEMP: ปุ่มบัญชีทดสอบ (ลบเมื่อระบบเสร็จ) — ซ่อนถ้าไม่ได้เปิด ENABLE_DEV_LOGIN */}
@@ -142,45 +140,36 @@ async function LoggedInHome({
       </p>
 
       {/* Currency bar (Silver/Gold ย้ายไปโชว์ค้างที่ header แล้ว) */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface/60 p-3 text-center text-xs">
-        <Stat label="Ticket" value={user.packTicket} className="text-accent" />
-        <Stat label="การ์ด" value={cardCount} className="text-primary" />
-      </div>
+      <StatRow>
+        <Stat label="Ticket" value={user.packTicket.toLocaleString()} />
+        <Stat label="การ์ด" value={cardCount.toLocaleString()} />
+      </StatRow>
 
       {/* Shortcut cards: My Club / PvP / Fantasy */}
       <div className="grid grid-cols-3 gap-2">
-        <Link
-          href="/club"
-          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
-        >
+        <Card href="/club" className="text-center">
           <p className="text-xs font-semibold">My Club</p>
-          <p className="mt-1 text-lg font-bold text-accent">{chem.rating || "-"}</p>
+          <p className="text-stat-hero mt-1 text-lg text-accent">{chem.rating || "-"}</p>
           <p className="text-[10px] text-muted">Chem {chem.teamChem}/33</p>
-        </Link>
-        <Link
-          href="/pvp"
-          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
-        >
+        </Card>
+        <Card href="/pvp" className="text-center">
           <p className="text-xs font-semibold">PvP</p>
-          <p className="mt-1 text-lg font-bold text-accent">{pvpStatus.matchesRemaining}</p>
+          <p className="text-stat-hero mt-1 text-lg text-accent">{pvpStatus.matchesRemaining}</p>
           <p className="text-[10px] text-muted">แมตช์เหลือวันนี้</p>
-        </Link>
-        <Link
-          href="/fantasy"
-          className="rounded-2xl border border-border bg-surface/60 p-3 text-center hover:border-primary"
-        >
+        </Card>
+        <Card href="/fantasy" className="text-center">
           <p className="text-xs font-semibold">Fantasy</p>
-          <p className="mt-1 text-lg font-bold text-accent">
+          <p className="text-stat-hero mt-1 text-lg text-accent">
             {!currentGameweek ? "-" : myEntry?.submittedAt ? "ส่งแล้ว" : "ยังไม่ส่ง"}
           </p>
           <p className="text-[10px] text-muted">
             {currentGameweek ? `GW${currentGameweek.number}` : "ไม่มีรอบเปิด"}
           </p>
-        </Link>
+        </Card>
       </div>
 
       {/* Level / EXP */}
-      <div className="rounded-2xl border border-border bg-surface/60 p-4">
+      <div className="surface-card rounded-2xl p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-bold text-primary">Level {user.level}</span>
           <span className="text-muted">
@@ -237,30 +226,11 @@ async function LoggedInHome({
         </Link>
         <Link
           href="/club"
-          className="rounded-xl border border-border bg-surface py-4 text-center font-bold hover:border-primary"
+          className="surface-card rounded-xl py-4 text-center font-bold transition hover:brightness-110"
         >
           My Club
         </Link>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: number;
-  className?: string;
-}) {
-  return (
-    <div>
-      <div className={`font-bold ${className ?? ""}`}>
-        {value.toLocaleString()}
-      </div>
-      <div className="text-muted">{label}</div>
     </div>
   );
 }

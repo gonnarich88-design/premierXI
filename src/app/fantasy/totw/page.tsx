@@ -1,9 +1,9 @@
 // src/app/fantasy/totw/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getLatestScoredGameweek } from "@/lib/fantasy";
 import { getTeamOfTheWeek, type TotwSlot } from "@/lib/fantasyTotw";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "TOTW · Premier XI" };
 
@@ -16,13 +16,10 @@ export default async function FantasyTotwPage() {
 
   return (
     <div className="px-3 pt-3 pb-6">
-      <Link href="/fantasy" className="text-sm text-primary">
-        ← กลับ
-      </Link>
-
-      <h1 className="mb-3 mt-3 px-1 text-lg font-bold">
-        Team of the Week{gameweek ? ` — GW${gameweek.number}` : ""}
-      </h1>
+      <PageHeader
+        title={`Team of the Week${gameweek ? ` — GW${gameweek.number}` : ""}`}
+        backHref="/fantasy"
+      />
 
       {!gameweek ? (
         <p className="mt-10 text-center text-sm text-muted">ยังไม่มี Gameweek ที่ปิดคิดคะแนนแล้ว กลับมาเช็คใหม่ภายหลัง</p>

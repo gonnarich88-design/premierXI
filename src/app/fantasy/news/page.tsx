@@ -1,8 +1,8 @@
 // src/app/fantasy/news/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { getNews } from "@/lib/notifications";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "ข่าว Fantasy · Premier XI" };
 
@@ -26,18 +26,14 @@ export default async function FantasyNewsPage() {
 
   return (
     <div className="px-4 pt-3 pb-6">
-      <Link href="/fantasy" className="text-sm text-primary">
-        ← กลับ
-      </Link>
-
-      <h1 className="mb-4 mt-3 text-lg font-bold">ข่าว</h1>
+      <PageHeader title="ข่าว" backHref="/fantasy" />
 
       {news.length === 0 ? (
         <p className="mt-10 text-center text-sm text-muted">ยังไม่มีข่าว</p>
       ) : (
         <ul className="space-y-2">
           {news.map((n) => (
-            <li key={n.id} className="rounded-xl border border-border bg-surface/60 p-3">
+            <li key={n.id} className="surface-card rounded-xl p-3">
               <h3 className="font-semibold">{n.title}</h3>
               <p className="mt-1 whitespace-pre-line text-sm text-muted">{n.body}</p>
               <p className="mt-2 text-[11px] text-muted">{timeAgo(n.createdAt)}</p>

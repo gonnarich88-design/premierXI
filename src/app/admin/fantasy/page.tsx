@@ -32,7 +32,7 @@ export default async function AdminFantasyPage({
     <div className="px-4 pt-5">
       <h1 className="mb-4 text-lg font-bold">จัดการ Fantasy — Gameweek</h1>
 
-      <details className="mb-6 rounded-xl border border-border bg-surface/60 p-4 text-sm open:pb-4">
+      <details className="surface-card mb-6 rounded-xl p-4 text-sm open:pb-4">
         <summary className="cursor-pointer select-none text-sm font-semibold text-primary">
           วิธีสร้าง Gameweek และคิดคะแนน (แตะเพื่อดูขั้นตอนเต็ม)
         </summary>
@@ -71,7 +71,7 @@ export default async function AdminFantasyPage({
         </p>
       )}
 
-      <form action={createGameweekAction} className="mb-6 space-y-3 rounded-xl border border-border bg-surface/60 p-4">
+      <form action={createGameweekAction} className="surface-card mb-6 space-y-3 rounded-xl p-4">
         <div>
           <label className="mb-1 block text-sm text-muted">หมายเลข Gameweek</label>
           <input
@@ -108,7 +108,7 @@ export default async function AdminFantasyPage({
             <li key={gw.id}>
               <Link
                 href={`/admin/fantasy/${gw.id}`}
-                className="block rounded-xl border border-border bg-surface/60 p-3 hover:border-primary"
+                className="surface-card block rounded-xl p-3 transition hover:brightness-110"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Gameweek {gw.number}</span>

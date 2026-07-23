@@ -77,7 +77,13 @@ export default function BottomNav() {
                   active ? "text-primary" : "text-muted hover:text-foreground"
                 }`}
               >
-                {item.icon}
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                    active ? "bg-primary/15" : ""
+                  }`}
+                >
+                  {item.icon}
+                </span>
                 <span>{item.label}</span>
               </Link>
             </li>

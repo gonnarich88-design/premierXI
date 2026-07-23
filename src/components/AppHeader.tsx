@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // Header บางๆ ด้านบน (แสดงเฉพาะตอนล็อกอิน) — currency ค้าง + กระดิ่งแจ้งเตือน + ไอคอนโปรไฟล์
 // Solid icon, ไม่ใช้ emoji ตามกฎ UI
@@ -11,13 +14,17 @@ export default function AppHeader({
   silver: number;
   gold: number;
 }) {
+  const pathname = usePathname();
+  // หน้า /design-system มี header ของตัวเอง ไม่ต้องแสดง chrome ตัวนี้
+  if (pathname && pathname === "/design-system") return null;
+
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/90 px-4 py-2.5 backdrop-blur">
       <Link href="/" className="text-sm font-extrabold tracking-tight text-primary">
         Premier XI
       </Link>
       <div className="-mr-1 flex items-center gap-2">
-        <div className="flex items-center gap-2 text-xs font-semibold">
+        <div className="flex items-center gap-2 rounded-full border border-border bg-surface-2/60 px-3 py-1 text-xs font-semibold">
           <span className="text-silver">{silver.toLocaleString()}</span>
           <span className="text-gold">{gold.toLocaleString()}</span>
         </div>

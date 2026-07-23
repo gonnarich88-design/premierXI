@@ -15,7 +15,7 @@ export default function FantasyLeaderboard({
   const myRowInTop = rows.some((r) => r.userId === myUserId);
 
   return (
-    <div className="mt-6 rounded-xl border border-border bg-surface/60 p-4">
+    <div className="surface-card mt-6 rounded-xl p-4">
       <h2 className="mb-3 text-sm font-semibold">Weekly Leaderboard — Gameweek {gameweekNumber}</h2>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">ยังไม่มีผลคะแนน</p>

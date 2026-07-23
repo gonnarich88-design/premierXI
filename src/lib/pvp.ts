@@ -343,7 +343,7 @@ export async function playPvpMatch(userId: string, now: Date = new Date()): Prom
       });
     }
     const freshQuota = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { pvpMatchesToday: true } });
-    let matchesToday = freshQuota.pvpMatchesToday;
+    const matchesToday = freshQuota.pvpMatchesToday;
 
     let isTicketMatch: boolean;
     if (matchesToday < FREE_MATCHES_PER_DAY) {

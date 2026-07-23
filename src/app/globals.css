@@ -2,10 +2,10 @@
 
 /* ===== Premier XI — Purple Theme (dark, mobile-first) ===== */
 :root {
-  --background: #0f0720;
-  --surface: #1a0f33;
-  --surface-2: #251646;
-  --border: #362358;
+  --background: #0a0810;
+  --surface: #17102b;
+  --surface-2: #221541;
+  --border: #2c1d4a;
   --foreground: #f4f1fb;
   --muted: #a99bc4;
   --primary: #8b5cf6;
@@ -14,6 +14,9 @@
   --accent: #c084fc;
   --gold: #f5c451;
   --silver: #c9d1e0;
+  --card-grad-hi: #271948;
+  --card-grad-lo: #120b24;
+  --card-grad-angle: 45deg;
 }
 
 @theme inline {
@@ -31,6 +34,9 @@
   --color-silver: var(--silver);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-pill: 9999px;
+  --radius-card: 1rem;
+  --radius-field: 0.75rem;
 }
 
 html,
@@ -42,9 +48,10 @@ body {
 body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   background-image: radial-gradient(
-    120% 60% at 50% -10%,
-    rgba(124, 58, 237, 0.25) 0%,
-    transparent 60%
+    85% 60% at 100% 0%,
+    rgba(139, 92, 246, 0.3) 0%,
+    rgba(124, 58, 237, 0.12) 28%,
+    transparent 55%
   );
   background-attachment: fixed;
 }
@@ -53,6 +60,36 @@ body {
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* ===== Design system utilities (docs/design.md) ===== */
+.surface-card {
+  background-image: linear-gradient(
+    var(--card-grad-angle),
+    var(--card-grad-lo) 0%,
+    var(--surface) 55%,
+    var(--card-grad-hi) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.glow-primary {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.3),
+    0 0 24px rgba(139, 92, 246, 0.25);
+}
+
+.text-stat-hero {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.text-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 /* ===== Pack opening animations ===== */

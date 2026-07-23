@@ -6,6 +6,7 @@ import { openPackAction, openPackWithShardsAction } from "@/app/actions/pack";
 import { openStarterPackAction } from "@/app/actions/starter";
 import { TIER_COLOR, type CardTier } from "@/lib/constants";
 import PlayerCard from "@/components/PlayerCard";
+import Button from "@/components/ui/Button";
 
 type PackMeta = {
   id: string;
@@ -151,13 +152,14 @@ export default function PackShop({
                 รับครั้งแรก: การ์ดตั้งต้น 11 ใบ (ครบทุกตำแหน่ง) + 300 Silver
               </p>
             </div>
-            <button
+            <Button
               onClick={handleOpenStarter}
               disabled={phase === "opening"}
-              className="shrink-0 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
+              variant="gradient"
+              className="shrink-0"
             >
               เปิดฟรี
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -170,7 +172,7 @@ export default function PackShop({
           return (
             <div
               key={pack.id}
-              className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4"
+              className="surface-card rounded-2xl p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -188,18 +190,18 @@ export default function PackShop({
                   )}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <button
+                  <Button
                     onClick={() => runOpen(() => openPackAction(pack.id))}
                     disabled={!canAfford || phase === "opening"}
-                    className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:bg-primary-strong disabled:opacity-40"
+                    variant="gradient"
                   >
                     {pack.cost} {CURRENCY_LABEL[pack.currency]}
-                  </button>
+                  </Button>
                   {exchange && (
                     <button
                       onClick={() => runOpen(() => openPackWithShardsAction(exchange.id))}
                       disabled={wallet[exchange.field] < exchange.cost || phase === "opening"}
-                      className="rounded-xl border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
+                      className="rounded-full border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
                     >
                       แลก {exchange.cost} {CURRENCY_LABEL[exchange.field]}
                     </button>
@@ -268,12 +270,9 @@ export default function PackShop({
                   })}
                 </div>
               </div>
-              <button
-                onClick={close}
-                className="my-4 shrink-0 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground hover:bg-primary-strong"
-              >
+              <Button onClick={close} variant="gradient" size="lg" className="my-4 max-w-xs shrink-0">
                 {reveal.isStarter ? "เริ่มจัดทีม" : "เยี่ยม"}
-              </button>
+              </Button>
             </div>
           )}
         </div>

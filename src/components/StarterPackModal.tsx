@@ -15,7 +15,7 @@ export default function StarterPackModal() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="relative w-full max-w-xs rounded-2xl border border-accent bg-gradient-to-br from-surface-2 to-surface p-6 text-center shadow-xl"
+        className="surface-card relative w-full max-w-xs rounded-2xl border border-accent p-6 text-center shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

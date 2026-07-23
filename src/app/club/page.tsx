@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +5,7 @@ import { getOrCreateSquad } from "@/lib/squad";
 import { FORMATIONS } from "@/lib/formations";
 import { computeChemistry, type ChemEntry } from "@/lib/chemistry";
 import TeamNameEditor from "@/components/TeamNameEditor";
+import Card from "@/components/ui/Card";
 
 export default async function ClubPage() {
   const user = await getCurrentUser();
@@ -39,25 +39,19 @@ export default async function ClubPage() {
       <TeamNameEditor initialName={user.teamName} />
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Link
-          href="/team"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/team">
           <h2 className="text-sm font-semibold">จัดทีม</h2>
           <p className="mt-1 text-xs text-muted">
             {squad.formation} · {chem.filled}/11 · Chemistry {chem.teamChem}/33
           </p>
-          <p className="mt-2 text-2xl font-bold text-accent">{chem.rating || "-"}</p>
-        </Link>
+          <p className="text-stat-hero mt-2 text-2xl text-accent">{chem.rating || "-"}</p>
+        </Card>
 
-        <Link
-          href="/collection"
-          className="rounded-2xl border border-border bg-surface/60 p-4 hover:border-primary"
-        >
+        <Card href="/collection">
           <h2 className="text-sm font-semibold">คลังการ์ด</h2>
           <p className="mt-1 text-xs text-muted">การ์ดทั้งหมดที่มี</p>
-          <p className="mt-2 text-2xl font-bold text-accent">{cardCount} ใบ</p>
-        </Link>
+          <p className="text-stat-hero mt-2 text-2xl text-accent">{cardCount} ใบ</p>
+        </Card>
       </div>
     </div>
   );

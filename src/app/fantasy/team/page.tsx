@@ -1,11 +1,11 @@
 // src/app/fantasy/team/page.tsx
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentGameweek, getOrCreateEntry } from "@/lib/fantasy";
 import { FORMATIONS, FORMATION_NAMES, DEFAULT_FORMATION } from "@/lib/formations";
 import FantasyPitch from "@/components/FantasyPitch";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const metadata = { title: "จัดทีม Fantasy · Premier XI" };
 
@@ -18,11 +18,11 @@ export default async function FantasyTeamPage() {
 
   if (!gameweek) {
     return (
-      <div className="px-4 pt-10 text-center text-sm text-muted">
-        <Link href="/fantasy" className="mb-4 inline-block text-primary">
-          ← กลับ
-        </Link>
-        <p>ยังไม่มี Gameweek เปิดให้จัดทีมตอนนี้ กลับมาเช็คใหม่ภายหลัง</p>
+      <div className="px-4 pt-3">
+        <PageHeader title="จัดทีม" backHref="/fantasy" />
+        <p className="pt-6 text-center text-sm text-muted">
+          ยังไม่มี Gameweek เปิดให้จัดทีมตอนนี้ กลับมาเช็คใหม่ภายหลัง
+        </p>
       </div>
     );
   }
@@ -73,9 +73,7 @@ export default async function FantasyTeamPage() {
   return (
     <div>
       <div className="px-3 pt-3">
-        <Link href="/fantasy" className="text-sm text-primary">
-          ← กลับ
-        </Link>
+        <PageHeader title="จัดทีม" backHref="/fantasy" />
       </div>
       <FantasyPitch
         gameweekId={gameweek.id}

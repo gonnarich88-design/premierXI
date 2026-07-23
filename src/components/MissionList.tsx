@@ -11,7 +11,7 @@ export default function MissionList({ missions }: { missions: MissionStatus[] })
   const weekly = missions.filter((m) => m.period === "weekly");
 
   return (
-    <div className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4">
+    <div className="surface-card rounded-2xl p-4">
       <h2 className="mb-2 font-bold">มิชชั่นวันนี้</h2>
       <div className="space-y-2">
         {daily.map((m) => (

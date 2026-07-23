@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import PlayerCard from "@/components/PlayerCard";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default async function CollectionPage() {
   const user = await getCurrentUser();
@@ -15,14 +16,15 @@ export default async function CollectionPage() {
   });
 
   return (
-    <div className="px-4 pt-6">
-      <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">คลังการ์ด</h1>
-        <span className="text-sm text-muted">{cards.length} ใบ</span>
-      </header>
+    <div className="px-4 pt-3">
+      <PageHeader
+        title="คลังการ์ด"
+        backHref="/club"
+        action={<span className="shrink-0 text-sm text-muted">{cards.length} ใบ</span>}
+      />
 
       {cards.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface/60 p-6 text-center text-sm text-muted">
+        <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
           ยังไม่มีการ์ด — ไปที่หน้า{" "}
           <Link href="/pack" className="text-accent">
             เปิดซอง

@@ -35,14 +35,14 @@ export default async function ProfilePage() {
 
       <Link
         href="/collection"
-        className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+        className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
       >
         ดูคลังการ์ดทั้งหมด
       </Link>
 
       <Link
         href="/achievements"
-        className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+        className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
       >
         Achievement
       </Link>
@@ -50,7 +50,7 @@ export default async function ProfilePage() {
       {user.isAdmin && (
         <Link
           href="/admin/news"
-          className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+          className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
         >
           จัดการข่าว (Admin)
         </Link>
@@ -59,7 +59,7 @@ export default async function ProfilePage() {
       {user.isAdmin && (
         <Link
           href="/admin/fantasy"
-          className="mb-3 block w-full rounded-xl border border-border bg-surface py-3 text-center font-semibold hover:border-primary"
+          className="surface-card mb-3 block w-full rounded-xl py-3 text-center font-semibold transition hover:brightness-110"
         >
           จัดการ Fantasy (Admin)
         </Link>
@@ -79,7 +79,7 @@ export default async function ProfilePage() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface/60 p-3">
+    <div className="surface-card rounded-xl p-3">
       <div className="text-xs text-muted">{label}</div>
       <div className="mt-0.5 font-bold">{value}</div>
     </div>

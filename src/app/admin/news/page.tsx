@@ -25,7 +25,7 @@ export default async function AdminNewsPage() {
       {/* ฟอร์มเขียนข่าวใหม่ (server action — ทำงานได้แม้ยังไม่ hydrate) */}
       <form
         action={createAnnouncementAction}
-        className="mb-6 space-y-3 rounded-xl border border-border bg-surface/60 p-4"
+        className="surface-card mb-6 space-y-3 rounded-xl p-4"
       >
         <div>
           <label className="mb-1 block text-sm text-muted">หัวข้อ</label>
@@ -65,7 +65,7 @@ export default async function AdminNewsPage() {
           {items.map((n) => (
             <li
               key={n.id}
-              className="rounded-xl border border-border bg-surface/60 p-3"
+              className="surface-card rounded-xl p-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold">{n.title}</h3>

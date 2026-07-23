@@ -26,7 +26,7 @@ export default function TeamNameEditor({ initialName }: { initialName: string | 
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between rounded-2xl border border-border bg-surface/60 p-4">
+      <div className="surface-card flex items-center justify-between rounded-2xl p-4">
         <div>
           <p className="text-xs text-muted">ชื่อทีม</p>
           <h2 className="text-lg font-bold">{initialName ?? "ยังไม่ได้ตั้งชื่อทีม"}</h2>
@@ -42,7 +42,7 @@ export default function TeamNameEditor({ initialName }: { initialName: string | 
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface/60 p-4">
+    <div className="surface-card rounded-2xl p-4">
       <p className="mb-2 text-xs text-muted">ชื่อทีม (2-20 ตัวอักษร)</p>
       <input
         value={value}

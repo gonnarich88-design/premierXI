@@ -160,7 +160,7 @@
   - [ ] **Fantasy admin UI**: กรอกสถิติยังเป็น manual form ต่อนักเตะ (default นาที=90) — ยังไม่มีปุ่ม preset 0/45/60/90 หรือ bulk-set-starters=90 ด้วย client JS ตามที่สเปคหัวข้อ 8 แนะนำ (ลดภาระ admin) เป็น UX polish ที่ตัดออกจากสโคป 7B เพื่อ ship MVP ก่อน
   - [ ] **Fantasy Monthly/Season leaderboard tab**: `FantasyLeaderboard.tsx` (7B) ยังมีแค่ Weekly — ต้องเพิ่ม tab switcher ตอน 7C ทำ Monthly จริง
   - [~] **Fantasy nav entry point**: ผู้เล่นทั่วไปไม่มีทางเข้า `/fantasy` จาก UI เลย — แก้ไปพร้อมกับงาน redesign bottom nav ทั้งระบบ ดูรายละเอียดที่ **ขั้น 11**
-- [ ] แก้ ESLint error ค้าง: `src/lib/pvp.ts:346` — `let matchesToday` ไม่เคย reassign ต้องเป็น `const` (`prefer-const`) ทำให้ `npm run lint` ไม่ผ่านทั้งโปรเจกต์ — หลุดมาจาก commit `7850b4e` (2026-07-19, รีแฟกเตอร์ quota day-rollover ให้ atomic) แก้บรรทัดเดียว
+- [x] แก้ ESLint error ค้าง: `src/lib/pvp.ts:346` — `let matchesToday` ไม่เคย reassign ต้องเป็น `const` (`prefer-const`) ทำให้ `npm run lint` ไม่ผ่านทั้งโปรเจกต์ — หลุดมาจาก commit `7850b4e` (2026-07-19, รีแฟกเตอร์ quota day-rollover ให้ atomic) แก้บรรทัดเดียว
 - [ ] Responsive ครบทุกหน้า (มือถือเป็นหลัก)
 - [ ] เตรียมความเข้ากันได้กับ Telegram Mini App
 - [ ] ทดสอบ core loop end-to-end
@@ -242,3 +242,106 @@
 - [x] `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาดทุกรอบหลังแก้
 - [x] Codex adversarial-review 4 รอบ — approve รอบสุดท้าย
 - [ ] Manual browser QA ผ่าน Preview — เช็คเพิ่มจากขั้น 11: 5 การ์ดบน `/fantasy` ลิงก์ถูก, `/fantasy/fixtures` โชว์ตารางแข่ง GW ปัจจุบัน, `/fantasy/news` โชว์ข่าว, `/fantasy/totw` โชว์ทีม 4-3-3 (ต้องมี GW ที่ SCORED แล้วถึงจะเห็นข้อมูลจริง — ใช้ข้อมูลทดสอบจาก 7B QA เดิมได้), `/fantasy/team`/`/fantasy/leaderboard` ทำงานเหมือนเดิมหลังย้ายมา
+
+## ขั้น 13 — Design system ทั้งแอป (`docs/design.md`) [~]
+ผู้ใช้ส่งรูป mockup แอพ Fantasy Football โทนม่วง-ดำ (splash เรืองแสง, stat overview, list นักเตะ) ให้ Opus วางแผนปรับใช้กับ Premier XI ทั้งแอป ตัดสินใจร่วมกับผู้ใช้ครบ: **ขอบเขตทั้งแอป** (ไม่ใช่แค่ Fantasy), **คงสีเดิม** (ม่วง `#8b5cf6` + พื้นเข้ม ไม่เพิ่ม palette ใหม่) ดึงแค่ "ภาษาดีไซน์" จากรูป, **implement จริงต่อจาก doc** (ไม่ใช่แค่เอกสารเก็บไว้เฉยๆ), เก็บที่ `docs/design.md`
+
+จุดตัดสินใจเฉพาะ (asset เราไม่มีรูปแอ็คชั่นนักเตะแบบรูปตัวอย่าง มีแต่การ์ด FIFA-style กรอบ+สถิติในตัว):
+- **Hero/splash**: ใช้การ์ดนักเตะลอยเหนือ glow แทนรูปถ่าย แต่เตรียม "photo layer" เป็น slot เสริมไว้ให้ใส่รูปจริงทีหลังได้โดยไม่ต้องรื้อ component
+- **Avatar ใน list**: ใช้ mini-card chip สี่เหลี่ยมมุมโค้ง (ไม่ใช่วงกลม) ครอปด้วย `object-cover` แทนวงกลมเต็มใบ (ครอปวงกลมจากการ์ดที่มีกรอบจะเห็นกรอบเพี้ยน)
+- **หน้า player detail** (Overview/Stats tab ตามรูปตัวอย่าง Screen 2): **แยกออกไปเป็นงานถัดไป ไม่รวม scope นี้** — เป็นฟีเจอร์ใหม่ทั้งหน้า (route+query ใหม่) ไม่ใช่แค่ reskin, ค่า PAC/SHO/PAS/DRI/DEF/PHY เป็นเลข derive จาก OVR (`src/lib/cardgen.ts::generateStats`) ไม่ใช่ scouting data จริงต่อนักเตะ — รอทำทีหลังหลัง primitive (`Stat`/`Tabs`) เสร็จจะเร็วกว่า
+
+Opus สำรวจโค้ดจริงแล้วพบ: **ยังไม่มี shared UI primitives** (`src/components/ui/`) เลย ทุกหน้า hand-roll Tailwind เอง; bento hub pattern (Fantasy/My Club ที่เพิ่งทำ) ใกล้เคียงภาษาใหม่อยู่แล้ว; ปุ่มปัจจุบัน `rounded-xl` solid ไม่ใช่ pill-gradient แบบรูปตัวอย่าง — ต่างชัดสุด
+
+### Phase 0 — เขียน `docs/design.md`
+- [x] เขียนเอกสาร design system: tokens (radius/spacing/glow/typography scale) → primitives (`Button`/`Card`/`Stat`/`Tabs`/`Avatar`/`ListRow`/`PageHeader`) → patterns (hero, bento hub, segmented tabs, bottom nav, pack reveal motion) พร้อม audit ต่อหน้าจอ + phased rollout
+
+### Phase 1 — Foundation tokens & utilities (`globals.css`)
+- [x] Radius scale (`--radius-pill`/`--radius-card`/`--radius-field` ใน `@theme inline`), glow utilities (`.glow-hero`/`.glow-primary`/`.glow-tier-gold`), typography helper (`.text-stat-hero`/`.text-stat-label`) — `npx tsc --noEmit`/`npm run build` ผ่านสะอาด
+
+### Phase 2 — Primitive components ใหม่ (`src/components/ui/`)
+- [x] `Button`, `Card`, `Stat`/`StatRow`, `Tabs`, `Avatar`, `ListRow`, `PageHeader` — สร้างแล้ว ยังไม่ wire เข้าหน้าไหน, `npx tsc --noEmit`/`npm run build` ผ่านสะอาด
+
+### Phase 3 — Global chrome
+- [x] `BottomNav.tsx` — เพิ่ม active pill indicator (`bg-primary/15` รอบไอคอนตอน active) (ไม่เพิ่ม badge convention เพราะยังไม่มี nav item ไหนมีข้อมูล unread จริงให้ผูก — เก็บไว้ใน docs/design.md เป็นแนวทางเผื่ออนาคตเฉยๆ ไม่ใส่โค้ดที่ยังไม่มีใครเรียกใช้), `AppHeader.tsx` — ห่อ currency เป็น chip (`rounded-full border border-border bg-surface-2/60`) ให้ตรงภาษาการ์ด — `npx tsc --noEmit`/`npm run build` ผ่านสะอาด
+
+### Phase 4 — Hero/Splash
+- [x] `AuthForm.tsx` — การ์ดลอย (Ronaldo, royalprime) + `.glow-hero` เหนือฟอร์ม, ปุ่ม submit→`Button variant="gradient"`, ปุ่มสลับโหมด→`Button variant="outline"` (แทน text link เดิม, ตรงกับ pattern คู่ปุ่มในรูปตัวอย่าง Screen 1); `login/page.tsx`/`register/page.tsx` ใช้ `AuthForm` เดิมอยู่แล้วไม่ต้องแก้; **Home**: เพิ่ม hero card เดียวกันใน `GuestHome` เท่านั้น (ตัดสินใจไม่ใส่ hero ใหญ่ใน `LoggedInHome` เพราะหน้าแน่นด้วย widget การใช้งานจริงอยู่แล้ว เพิ่มรูปใหญ่จะดันเนื้อหาที่ใช้งานจริงลงมือถือ ขัด mobile-first) — `npx tsc --noEmit`/`npm run build` ผ่านสะอาด
+
+### Phase 5 — Hubs
+- [x] `fantasy/page.tsx`, `club/page.tsx` — การ์ด 5/2 ใบ migrate จาก `<Link className="rounded-2xl border...">` มือ hand-roll ไปใช้ `<Card href>` primitive; `page.tsx` (Home) — currency bar migrate เป็น `StatRow`+`Stat`, shortcut 3 การ์ด (My Club/PvP/Fantasy) migrate เป็น `<Card>`, ลบ local `Stat` component ที่ซ้ำซ้อนกับ primitive ใหม่ออก — `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Phase 6 — Store + PvP + Pack reveal
+- [x] `PackShop.tsx` — ปุ่ม "เปิดฟรี"/ปุ่มเปิดซองหลัก/ปุ่มปิด reveal overlay migrate เป็น `Button variant="gradient"`, ปุ่มแลก shard เปลี่ยนเป็น pill (`rounded-full`) แต่คงขนาด compact เดิมไว้ (ไม่ใช้ primitive เพราะเล็กกว่า size md/lg ที่มี), **คง glow ต่อ tier แบบ dynamic เดิมไว้** (`TIER_COLOR` map + inline `drop-shadow`) ไม่ลดเหลือ `.glow-tier-gold` ตัวเดียวเพราะจะเสียสีต่อ tier อื่นที่มีอยู่แล้ว (Bronze/Silver/Gold/Elite/Hero/Icon/Event/TOTW/TOTS/Legend); `PvpMatch.tsx` — ปุ่ม "แข่งเลย" → `Button variant="gradient" size="lg"`, สกอร์ผลแมตช์ → `.text-stat-hero` — `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Phase 7 — Subpages & lists
+- [x] `fantasy/{fixtures,news,leaderboard,totw,team}`, `collection/page.tsx` — `← กลับ` link เปล่าๆ ทุกจุด migrate เป็น `<PageHeader>` (back arrow + title, `collection` ใช้ trailing `action` slot โชว์จำนวนการ์ด); **ไม่แตะ `/team` (My Club team builder)** — หน้านั้น render `TeamBuilder` เต็มจอไม่มี header/back link เดิมอยู่แล้ว (ใช้ bottom nav อย่างเดียวเป็น navigation) ใส่ `PageHeader` เข้าไปจะเป็นการเปลี่ยน layout ของ drag-drop editor ที่ไม่ได้อยู่ใน audit เดิม; **ไม่ใช้ `ListRow`** ในหน้าไหนของ phase นี้ — เนื้อหาจริง (fixtures = home/away club, news = article card, leaderboard = rank row ไม่มีรูปนักเตะ) ไม่ตรงกับ pattern "avatar+title+subtitle" ของ `ListRow` เลย ฝืนใช้จะไม่ใช่การ canonicalize แต่เป็นการบิดเนื้อหาให้เข้ากับ component ผิด — `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Verify
+- [x] `npx tsx --test`/`npx tsc --noEmit`/`npm run build` ผ่านสะอาดทุก phase (รันซ้ำหลังแก้ทุกจุด)
+- [ ] Manual browser QA ผ่าน Preview — เช็คทุกหน้าที่แก้: splash/login/register (hero card+glow+ปุ่มคู่), Home (guest hero + logged-in shortcuts/stat bar), Store (ปุ่ม pill, reveal ปิดถูก), PvP (ปุ่มแข่ง+สกอร์), Fantasy hub/subpages ทั้ง 5, My Club hub/collection, bottom nav active indicator, header currency chip
+
+### Design system reference page
+- [x] สร้างหน้า `/design-system` จาก `docs/design.md` — แสดง tokens, primitives และ patterns ที่ใช้ทั้งแอป เพื่อใช้อ้างอิงตอนพัฒนาต่อ
+
+### เพิ่มเติมหลัง QA แรก — Neon streak (ผู้ใช้ทักว่าตอนแรกไม่มีลายเส้นแสงเฉียงแบบรูปตัวอย่าง)
+- [x] เพิ่ม `HeroGlow` primitive (`src/components/ui/HeroGlow.tsx`) — SVG เส้นแสงเฉียง 3 ชั้น (กว้างฟุ้ง+กลาง+core คมสว่าง) ไล่สี primary→accent→foreground ห่อการ์ด hero ที่ลอยอยู่ตรงกลาง
+- [x] Wire เข้า `AuthForm.tsx` และ `GuestHome` (`page.tsx`) แทน `glow-hero` div เปล่าเดิม
+- [x] อัพเดต `docs/design.md` §3.1 บันทึก pattern ใหม่
+- [x] `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด — ยังไม่ QA ผ่าน browser จริง
+- [x] ผู้ใช้เห็น preview จริงแล้ว → ขอเอากล่อง neon/การ์ดออกจาก `/login`,`/register` ก่อน แล้วขอเอาออกจาก Home guest ด้วย (เอาออกทั้งหมด) — **revert เต็ม**: ลบ `<HeroGlow>` ออกจาก `AuthForm.tsx`/`GuestHome`, ลบไฟล์ `HeroGlow.tsx`, ลบ `.glow-hero`/`.glow-tier-gold` (unused) ออกจาก `globals.css`, อัพเดต `docs/design.md` §1.3/§3.1/§4 ให้ตรงสถานะจริง (hero = ลองแล้ว revert แล้ว, ไม่ใช่ pattern ที่ใช้งานอยู่) — คงไว้แค่ `Button variant="gradient"/"outline"` (ปุ่มคู่ pill) ที่ไม่เกี่ยวกับ hero image
+- [x] `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาดหลัง revert
+
+## ขั้น 14 — Dark Card-Based UI reskin (เปลี่ยนผิว surface/สี ต่อจากขั้น 13) [~]
+ผู้ใช้ขอ "Dark Mode Minimal / Glassmorphism" → คุยผ่าน `brainstorming` skill + Opus จนสรุปว่ารูปตัวอย่าง (EA Sports FC Companion App) เป็น **"Dark Card-Based UI" แบบ Flat + Tonal Surface** (ไม่ใช่ glassmorphism จริง เพราะไม่มี backdrop-blur/โปร่งแสง) — ผู้ใช้เลือกแนวทาง A (ตามรูปเป๊ะ ทึบ ไม่ blur) เหตุผล: performance มือถือ (การ์ดเยอะ+blur จะกระตุก), การ์ด hub เป็น UI ข้อความล้วนไม่มีอะไรให้ blur ทะลุเห็น, `bg-surface/60` เดิมใกล้ A อยู่แล้ว
+
+**ขอบเขต**: เปลี่ยนผิวสี/surface เท่านั้น ไม่แตะ component API/layout/routing/motion ของ 7-phase เดิม (ขั้น 13), ไม่แตะ `backdrop-blur` ที่ header/bottom nav
+
+**สรุป design ที่ approve แล้ว**:
+1. พื้นหลัง: เกือบดำสนิททึบ + glow ม่วงจุดเดียวมุมขวาบน เบลอฟุ้ง จางหายไป ~1/3 บนจอ (กำหนดครั้งเดียวที่ layout กลาง)
+2. การ์ด/Surface: gradient ไล่เฉด 45° คงที่ทุกใบ ทิศทางตรงกับ glow bg (สว่างขวาบน เข้มซ้ายล่าง) — เหมือนมีแหล่งแสงเดียวกันทั้งจอ
+3. ตัด `border border-border` ออกจากการ์ดปกติทั้งหมด — แยกจากพื้นหลังด้วย tonal contrast + gradient แทน
+4. **3 คำถามที่ถามผู้ใช้ — ตอบแล้ว (ตามคำแนะนำ Opus ทั้งหมด)**:
+   - Avatar chip ใน `ListRow` → **เก็บ `border border-border` ไว้** (รูปเล็กมีขอบช่วยแยกชิ้นชัดกว่า)
+   - การ์ดสถานะเด่น (Starter Pack ขอบทอง/accent, แจ้งเตือนใหม่ขอบม่วง) → **เก็บขอบไว้** (สื่อสถานะ ไม่ใช่ขอบการ์ดทั่วไป)
+   - หน้า Admin (`admin/news`, `admin/fantasy/*`) → **ปรับ container ให้ตรงธีมใหม่** แต่ **เก็บ `<input>` border ไว้ทุกที่** (focus affordance)
+
+**Token ใหม่ (`globals.css`, ชื่อ token เดิมไม่เปลี่ยน แค่ค่า)**:
+```css
+--background: #0a0810;  /* was #0f0720 */
+--surface:    #17102b;  /* was #1a0f33 */
+--surface-2:  #221541;  /* was #251646 */
+--border:     #2c1d4a;  /* เหลือไว้ใช้แค่จุด functional (input focus ฯลฯ) */
+--card-grad-hi: #271948;   /* ใหม่ */
+--card-grad-lo: #120b24;   /* ใหม่ */
+--card-grad-angle: 45deg;  /* ใหม่ — องศาคงที่ ไม่ใช้ to-top-right เพราะจะบิดตามสัดส่วนการ์ด */
+```
+Body glow ย้ายจาก `radial-gradient(120% 60% at 50% -10%, ...)` (กลางบน) → `radial-gradient(85% 60% at 100% 0%, rgba(139,92,246,.30) 0%, rgba(124,58,237,.12) 28%, transparent 55%)` (มุมขวาบนจริง)
+
+Utility ใหม่ `.surface-card` — 3-stop linear-gradient มุม 45° คงที่ + `box-shadow: inset 0 1px 0 rgba(255,255,255,.04)` (เส้นสว่างบางๆ ขอบบนแทนที่ border เดิม)
+
+Hover ใหม่: `hover:border-primary` เดิม → `hover:brightness-110` (การ์ดปกติ), การ์ด `glow` prop เดิมยังคง `hover:glow-primary` ไว้
+
+**Fallback pre-approved** (ไม่ต้องถามใหม่ถ้า QA เจอปัญหาการ์ดกลืนกันบนกริดมือถือ): เติม hairline inset border `rgba(255,255,255,.03)`
+
+### Phase 1 — Foundation (`globals.css`)
+- [x] Token ใหม่ (background/surface/surface-2/card-grad-hi/card-grad-lo) + body glow ย้ายมุมขวาบน + `.surface-card` utility — `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Phase 2 — Primitives
+- [x] `Card.tsx`, `Stat.tsx`(`StatRow`), `ListRow.tsx` — ตัด border ปกติออก ใส่ `.surface-card` + hover ใหม่ (`hover:brightness-110`), **`ListRow` avatar chip เก็บ border ไว้ตามที่ตกลง** (คลุม `club/`,`fantasy/` hub อัตโนมัติเพราะใช้ `<Card>` อยู่แล้ว) — `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Phase 3 — 14+6 ไฟล์ hand-rolled surface + แก้ทิศทาง gradient ผิด
+- [x] 6 จุดที่ใช้ `bg-gradient-to-br from-surface-2 to-surface` (ทิศทางเดิมสว่างซ้ายบน ผิดทิศ) → แก้เป็น `.surface-card` (ทิศขวาบนตรงกับ body glow): `PvpMatch.tsx`, `PackShop.tsx`, `DailyClaim.tsx`, `MissionList.tsx`, `StarterPackModal.tsx` (คง `border-accent` ไว้ — เป็น Starter Pack promo), `page.tsx`
+- [x] ไฟล์ hand-roll surface เองไม่ผ่าน `Card` primitive → migrate ไปใช้ `.surface-card`: `AchievementList.tsx`, `TeamNameEditor.tsx` (คง border ปุ่ม/input ไว้), `FantasyLeaderboard.tsx`, `fantasy/news/page.tsx`, `fantasy/fixtures/page.tsx`, `collection/page.tsx`, `profile/page.tsx` (การ์ด stat + เมนูลิงก์ 4 จุด, คง border ปุ่ม "ออกจากระบบ" สีแดงไว้เป็น danger affordance), `notifications/page.tsx` (2 จุด: NewsRow/ActivityRow — คง border สถานะ "ใหม่/unread" ไว้ ตัดเฉพาะ state ปกติ), `page.tsx` (Level/EXP card, ปุ่ม "My Club" quick action)
+- [x] **ไม่แตะ**: `TeamBuilder.tsx`/`FantasyPitch.tsx` (pitch/slot picker UI ของ team builder — นอกสโคป ตามแนวเดียวกับที่ขั้น 13 ตัดสินใจไม่แตะ `/team`), input field ทุกจุด (`bg-background`/`focus:border-primary`), ปุ่ม dev-login dashed border (`page.tsx`/`login/page.tsx` — ของทดสอบชั่วคราวจงใจให้ต่างจากปุ่มปกติ)
+- [x] **การ์ดสถานะเด่นเก็บขอบสีไว้ตามที่ตกลง** — Starter Pack promo (`page.tsx`/`PackShop.tsx` ขอบ `border-accent`), แจ้งเตือนใหม่ (`notifications/page.tsx` ขอบ `border-primary/50`/`border-accent/40`), ปุ่มออกจากระบบ (danger)
+- [x] `npx tsx --test` (77/77 — เจอ flaky 52/77 หนึ่งรอบจาก DB race ระหว่าง test file ไม่เกี่ยวกับงานนี้ รันซ้ำผ่าน), `npx tsc --noEmit` ผ่านสะอาด
+
+### Phase 4 — Design system doc + Admin
+- [x] `design-system/page.tsx` (living style guide) — อัพเดต "Card surface"/StatRow demo ใน `#components` section ให้ใช้ `.surface-card` + `divide-border`/`border-border` แทน hex เก่า (`#1a0f33`/`#362358`); ส่วน `COLORS` array อ่านจาก `var(--token)` อยู่แล้วเลยได้ค่าใหม่อัตโนมัติไม่ต้องแก้; ไม่แตะ hero/bento header mockup ด้านบน (ใช้ hex เฉพาะของ mockup ไม่ใช่ token จริงของระบบ นอกสโคป)
+- [x] หน้า Admin (`admin/news`, `admin/fantasy/*`) — container (form/details/list item) ปรับเป็น `.surface-card` แล้ว, **เก็บ `<input>`/`<select>`/`<textarea>` border ไว้ทุกจุด** (focus affordance) — ไม่แตะ `PlayerStatTable` row form (`bg-background`, เป็น input group ไม่ใช่การ์ด)
+- [x] อัพเดต `docs/design.md` §1.1/§2 ให้ตรงของจริงหลัง implement (ค่า token ใหม่ + `.surface-card` + เหตุผลตัดสินใจ 3 ข้อ)
+- [x] `npx tsx --test` (77/77), `npx tsc --noEmit`, `npm run build` ผ่านสะอาด
+
+### Verify
+- [ ] Manual browser QA ผ่าน Preview — เช็ค contrast ข้อความบนมุมเข้มของการ์ด, tap-target การ์ดที่ชนกันบนกริดมือถือ (ถ้ามีปัญหาใช้ fallback hairline border ที่ pre-approved ไว้แล้ว), ทุกหน้าที่แก้ทิศทาง gradient ใหม่, หน้า Admin (container ใหม่ + input border ยังอยู่)

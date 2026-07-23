@@ -54,7 +54,7 @@ export default function DailyClaim({
   const upcoming = nextMilestone(totalLogins);
 
   return (
-    <div className="rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-4">
+    <div className="surface-card rounded-2xl p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-bold">เช็คอินรายวัน</h2>
