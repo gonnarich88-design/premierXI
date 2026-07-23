@@ -23,13 +23,10 @@ model User {
   level Int @default(1)
   exp   Int @default(0)
 
-  // Currencies (Phase 0 economy)
-  silver      Int @default(0)
-  gold        Int @default(0)
-  packTicket  Int @default(0) // เดิมใช้เปิด Ticket Pack — ยกเลิก pack นั้นแล้ว เก็บ field ไว้เผื่ออนาคต ไม่แจกเพิ่มแล้ว
-  shards      Int @default(0) // จากการ์ดซ้ำ tier Bronze/Silver/Gold (Standard pack) — แลกเปิด Standard Pack ฟรี
-  evoShards   Int @default(0) // จากการ์ดซ้ำ tier Hero (Evolution pack) — แลกเปิด Evolution Pack ฟรี
-  primeShards Int @default(0) // จากการ์ดซ้ำ tier Legend (Royal Prime pack) — แลกเปิด Royal Prime Pack ฟรี
+  // Currencies (Phase 0 economy) — silver/gold/shards เท่านั้น (ดู docs/design.md §เศรษฐกิจ)
+  silver Int @default(0)
+  gold   Int @default(0)
+  shards Int @default(0) // รวมจากการ์ดซ้ำทุก tier (Bronze/Silver/Gold/Hero/Legend) — แลกเปิดซองฟรีได้ทุกแบบ
 
   // Pity: จำนวนครั้งที่เปิด Premium ติดกันโดยยังไม่ได้ Gold (ไม่ได้ใช้แล้วหลังยกเลิก Premium pack — เก็บไว้เผื่ออนาคต)
   pityCounter Int @default(0)

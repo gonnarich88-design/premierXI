@@ -55,17 +55,14 @@ export const PACKS: Record<string, PackConfig> = {
   },
 };
 
-/** แลก Shard เป็นการเปิดซองฟรี 1 ครั้ง — แยก pool ตามที่มา กันเอา shard ถูกไปแลกซองแพง */
-export const SHARD_EXCHANGE: Record<
-  string,
-  { packId: string; field: "shards" | "evoShards" | "primeShards"; cost: number }
-> = {
-  standard: { packId: "standard", field: "shards", cost: 500 },
-  evolution: { packId: "evolution", field: "evoShards", cost: 500 },
-  royalprime: { packId: "royalprime", field: "primeShards", cost: 1000 },
+/** แลก Shard (pool เดียว รวมทุก tier) เป็นการเปิดซองฟรี 1 ครั้ง */
+export const SHARD_EXCHANGE: Record<string, { packId: string; cost: number }> = {
+  standard: { packId: "standard", cost: 500 },
+  evolution: { packId: "evolution", cost: 2500 },
+  royalprime: { packId: "royalprime", cost: 6000 },
 };
 
-/** ค่า Shard ที่ได้จากการ์ดซ้ำ ต่อ tier */
+/** ค่า Shard ที่ได้จากการ์ดซ้ำ ต่อ tier — รวมเข้า pool เดียวกันหมด (ไม่แยกตามที่มาแล้ว) */
 export const SHARD_VALUE: Record<string, number> = {
   Bronze: 5,
   Silver: 15,
@@ -73,12 +70,6 @@ export const SHARD_VALUE: Record<string, number> = {
   Hero: 100,
   Legend: 250,
 };
-
-function shardFieldForTier(tier: string): "shards" | "evoShards" | "primeShards" {
-  if (tier === "Hero") return "evoShards";
-  if (tier === "Legend") return "primeShards";
-  return "shards";
-}
 
 const EXP_PER_OPEN = 20;
 
@@ -173,11 +164,7 @@ async function finalizeOpen(
   });
 
   const opened: OpenedCard[] = [];
-  const shardDelta: Record<"shards" | "evoShards" | "primeShards", number> = {
-    shards: 0,
-    evoShards: 0,
-    primeShards: 0,
-  };
+  let shardDelta = 0;
 
   for (const card of picks) {
     const owned = await tx.userCard.findUnique({
@@ -187,7 +174,7 @@ async function finalizeOpen(
     const isDuplicate = !!owned;
     const shardsGained = isDuplicate ? (SHARD_VALUE[card.tier] ?? 0) : 0;
     if (isDuplicate) {
-      shardDelta[shardFieldForTier(card.tier)] += shardsGained;
+      shardDelta += shardsGained;
     } else {
       await tx.userCard.create({ data: { userId, cardId: card.id } });
     }
@@ -214,9 +201,7 @@ async function finalizeOpen(
   await tx.user.update({
     where: { id: userId },
     data: {
-      shards: { increment: shardDelta.shards },
-      evoShards: { increment: shardDelta.evoShards },
-      primeShards: { increment: shardDelta.primeShards },
+      shards: { increment: shardDelta },
       silver: { increment: silverBonus },
       gold: { increment: goldBonus },
       level,
@@ -253,17 +238,18 @@ export async function openPack(
   if (!config) throw new Error("ไม่พบซองนี้");
 
   return prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { [config.currency]: true } as Record<string, true>,
-    });
-    const have = (user as unknown as Record<Currency, number>)[config.currency];
-    if (have < config.cost) throw new InsufficientFundsError(config.currency, have, config.cost);
-
-    await tx.user.update({
-      where: { id: userId },
+    const debited = await tx.user.updateMany({
+      where: { id: userId, [config.currency]: { gte: config.cost } },
       data: { [config.currency]: { decrement: config.cost } },
     });
+    if (debited.count === 0) {
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { [config.currency]: true } as Record<string, true>,
+      });
+      const have = (user as unknown as Record<Currency, number>)[config.currency];
+      throw new InsufficientFundsError(config.currency, have, config.cost);
+    }
 
     const picks = await resolvePackCards(tx, config);
     const result = await finalizeOpen(tx, userId, picks);
@@ -289,7 +275,7 @@ export async function grantFreePack(
   return finalizeOpen(tx, userId, picks);
 }
 
-/** แลก Shard ที่สะสมจากการ์ดซ้ำ เป็นการเปิดซองฟรี 1 ครั้ง (แยก pool ตาม exchangeId) */
+/** แลก Shard (pool เดียว) เป็นการเปิดซองฟรี 1 ครั้ง */
 export async function openPackWithShards(
   userId: string,
   exchangeId: string,
@@ -300,18 +286,17 @@ export async function openPackWithShards(
   const config = PACKS[exchange.packId];
 
   return prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { [exchange.field]: true } as Record<string, true>,
+    const debited = await tx.user.updateMany({
+      where: { id: userId, shards: { gte: exchange.cost } },
+      data: { shards: { decrement: exchange.cost } },
     });
-    const have = (user as unknown as Record<Currency, number>)[exchange.field];
-    if (have < exchange.cost)
-      throw new InsufficientFundsError(exchange.field as Currency, have, exchange.cost);
-
-    await tx.user.update({
-      where: { id: userId },
-      data: { [exchange.field]: { decrement: exchange.cost } },
-    });
+    if (debited.count === 0) {
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { shards: true },
+      });
+      throw new InsufficientFundsError("shards", user.shards, exchange.cost);
+    }
 
     const picks = await resolvePackCards(tx, config);
     const result = await finalizeOpen(tx, userId, picks);

@@ -21,7 +21,7 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 - สมัคร / เข้าสู่ระบบ / ออกจากระบบ
 - Starter Pack (11 ใบ + Silver 300) เปิดครั้งแรกในหน้า `/pack`
 - เปิดซอง 3 ประเภท เปิดทีละ **5 ใบ/ครั้ง**: Standard (silver), Evolution (gold, การันตีการ์ด Evolution 1 ใบ), Royal Prime (gold, การันตีการ์ด Royal Prime 1 ใบ) — ไม่มี pity/Premium/Ticket pack แล้ว (ยกเลิกไปตั้งแต่ 2026-07-16)
-- Duplicate → shards แยก 3 pool (shards/evoShards/primeShards) แลกเปิดซองฟรีได้ (Shard Exchange)
+- Duplicate → shards pool เดียว (รวม evoShards/primeShards เข้า shards แล้วตั้งแต่ 2026-07-24) แลกเปิดซองฟรีได้ (Shard Exchange)
 - Launch promotion: login สะสมครบ 15/30 วัน แจก Evolution/Royal Prime pack ฟรีครั้งเดียว, weekly gold trickle, First Deposit Bonus +20%
 - คลังการ์ด (`/collection`)
 - จัดทีม 11 คน (`/team`) พร้อม formation, chemistry, rating
@@ -172,10 +172,7 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 | `exp` | `Int` | `0` | EXP ปัจจุบัน |
 | `silver` | `Int` | `0` | สกุลเงิน Silver |
 | `gold` | `Int` | `0` | สกุลเงิน Gold |
-| `packTicket` | `Int` | `0` | Pack Ticket — เดิมใช้เปิด Ticket Pack, ยกเลิก pack นั้นแล้ว ไม่แจกเพิ่มอีก (เก็บ field ไว้เผื่ออนาคต) |
-| `shards` | `Int` | `0` | Shard จากการ์ดซ้ำ tier Bronze/Silver/Gold (Standard pack) |
-| `evoShards` | `Int` | `0` | Shard จากการ์ดซ้ำ tier Hero (Evolution pack) |
-| `primeShards` | `Int` | `0` | Shard จากการ์ดซ้ำ tier Legend (Royal Prime pack) |
+| `shards` | `Int` | `0` | Shard รวม pool เดียวจากการ์ดซ้ำทุก tier — ใช้แลกเปิดซองฟรีได้ทั้ง Standard/Evolution/Royal Prime (`packTicket`/`evoShards`/`primeShards` ถูกลบออกจาก schema แล้วเมื่อ 2026-07-24 หลังรวม/เลิกใช้) |
 | `pityCounter` | `Int` | `0` | **ไม่ได้ใช้แล้ว** หลังยกเลิก Premium pack (เก็บ field ไว้เผื่ออนาคต) |
 | `loginStreak` | `Int` | `0` | Streak เช็คอินรายวัน (รีเซ็ตถ้าขาด 1 วัน) — ใช้คำนวณ silver/gold รายวัน |
 | `lastClaimDate` | `DateTime?` | - | วันล่าสุดที่เคลม daily |
@@ -785,7 +782,7 @@ Internal:
 | `POSITIONS` | `["GK","LB","LWB","CB","RB","RWB","CDM","CM","CAM","LM","RM","LW","RW","ST","CF"]` | - |
 | `Position` | `(typeof POSITIONS)[number]` | Type |
 | `POSITION_GROUP` | `Record<Position, "GK" \| "DEF" \| "MID" \| "ATT">` | แมปตำแหน่งไปกลุ่ม |
-| `CURRENCIES` | `["silver","gold","packTicket","shards","evoShards","primeShards"]` | - |
+| `CURRENCIES` | `["silver","gold","shards"]` | - (ก่อน 2026-07-24 มี `packTicket`/`evoShards`/`primeShards` ด้วย — ลบทิ้งแล้ว) |
 | `Currency` | `(typeof CURRENCIES)[number]` | Type |
 | `TIER_COLOR` | `Record<CardTier, string>` | สี hex ต่อ tier |
 | `DEPOSIT_RATE_GOLD_PER_BAHT` | `10 / 100` | อัตราแลกเงินบาทเป็น Gold |
@@ -971,13 +968,13 @@ Pack config (`fillerRates` = เรตของใบที่สุ่มจา
 | `evolution` | Evolution Pack | gold | 10 | 10% | 50% | 40% | การันตี 1 ใบจากพูล Evolution (uniform 1/44) + 10% โบนัสใบที่ 2 |
 | `royalprime` | Royal Prime Pack | gold | 20 | 10% | 50% | 40% | การันตี 1 ใบจากพูล Royal Prime (uniform 1/44) + 12% โบนัสใบที่ 2 |
 
-Shard Exchange (แยก pool ตามที่มา กันเอา shard ถูกไปแลกซองแพง):
+Shard Exchange (pool เดียว ตั้งแต่ 2026-07-24 — ป้องกันฟาร์ม tier ต่ำแลกซองแพงด้วยราคาต่างกันมาก แทนการแยก pool ตามที่มาแบบเดิม):
 
 | Exchange ID | ใช้ field | Cost | แลกได้ |
 |---|---|---|---|
-| `standard` | `shards` | 600 | Standard Pack ฟรี 1 ครั้ง |
-| `evolution` | `evoShards` | 500 | Evolution Pack ฟรี 1 ครั้ง |
-| `royalprime` | `primeShards` | 1,000 | Royal Prime Pack ฟรี 1 ครั้ง |
+| `standard` | `shards` | 500 | Standard Pack ฟรี 1 ครั้ง |
+| `evolution` | `shards` | 2,500 | Evolution Pack ฟรี 1 ครั้ง |
+| `royalprime` | `shards` | 6,000 | Royal Prime Pack ฟรี 1 ครั้ง |
 
 Flow `resolvePackCards` (ใช้ร่วมกันทั้ง `openPack`/`openPackWithShards`/`grantFreePack`):
 
@@ -987,11 +984,11 @@ Flow `resolvePackCards` (ใช้ร่วมกันทั้ง `openPack`/`
 Flow `finalizeOpen` (เช็ค duplicate + แจก shard + EXP ต่อการเปิด 1 ครั้ง ไม่ใช่ต่อใบ):
 
 1. วนทุกใบที่สุ่มได้ เช็ค duplicate จาก `UserCard`
-2. ไม่ซ้ำ → create `UserCard`; ซ้ำ → เพิ่ม shard field ตาม tier (`Bronze/Silver/Gold → shards`, `Hero → evoShards`, `Legend → primeShards`) ด้วยค่าจาก `SHARD_VALUE`
+2. ไม่ซ้ำ → create `UserCard`; ซ้ำ → เพิ่ม `shards` (pool เดียว ทุก tier) ด้วยค่าจาก `SHARD_VALUE`
 3. เพิ่ม EXP คงที่ 20 หน่วยต่อการเปิด 1 ครั้ง (ไม่ใช่ต่อใบ) และ level-up ถ้าถึง
 4. return `{ cards: OpenedCard[], leveledUp, level }`
 
-`openPack`/`openPackWithShards` ครอบด้วย `prisma.$transaction` ของตัวเอง (หัก currency/shard ก่อนแล้วค่อยสุ่ม+finalize); `grantFreePack` รับ `tx` จากผู้เรียกเพื่อ atomic ร่วมกับ logic อื่น (เช่น `claimDaily`)
+`openPack`/`openPackWithShards` ครอบด้วย `prisma.$transaction` ของตัวเอง หักเงินด้วย `tx.user.updateMany({ where: { id, [currency]: { gte: cost } }, data: { decrement } })` (atomic conditional — เช็ค `count === 0` แล้วโยน `InsufficientFundsError` แทนอ่านยอดมาเช็คใน application ก่อน update เพื่อกัน race condition ตอนเปิดซองพร้อมกันหลายคำขอ ปรับแก้ 2026-07-24) ก่อนค่อยสุ่ม+finalize; `grantFreePack` รับ `tx` จากผู้เรียกเพื่อ atomic ร่วมกับ logic อื่น (เช่น `claimDaily`)
 
 ### 7.11 `src/lib/starter.ts`
 
@@ -1023,11 +1020,11 @@ Algorithm `pickStarterCardIds`:
 - อัปเดต `starterClaimed=true`, `silver += 300`
 - return รายละเอียดการ์ด
 
-### 7.12 `src/lib/daily.ts` — เขียนใหม่ 2026-07-16 (เพิ่ม gold trickle + login milestone, ไม่แจก packTicket แล้ว)
+### 7.12 `src/lib/daily.ts` — เขียนใหม่ 2026-07-16 (เพิ่ม gold trickle + login milestone), ลบ `packTicket` ออกจาก type แล้ว 2026-07-24
 
 | Export | ประเภท/Signature | รายละเอียด |
 |---|---|---|
-| `DailyReward` | type | `{ day, silver, exp, packTicket, gold }` — `packTicket` คงไว้ใน type เพื่อ backward-compat แต่ค่าจริงเป็น `0` เสมอ |
+| `DailyReward` | type | `{ day, silver, exp, gold }` |
 | `LOGIN_MILESTONES` | `{ evolution: {totalLogins:15, field:"evoMilestoneClaimed", packId:"evolution"}, royalprime: {totalLogins:30, field:"primeMilestoneClaimed", packId:"royalprime"} }` | milestone แจกซองฟรีครั้งเดียว |
 | `rewardForStreak` | `(streak: number): DailyReward` | คำนวณรางวัล |
 | `DailyStatus` | type | `{ canClaim, streak, nextStreak, nextReward, totalLogins }` — เพิ่ม `totalLogins` |
@@ -1041,8 +1038,7 @@ Algorithm `pickStarterCardIds`:
 - `day = ((streak - 1) % 7) + 1` (วันที่ 1-7)
 - `silver = 100 + day * 30 + (day === 7 ? 300 : 0)` — เพิ่ม bonus 300 วันที่ 7 แทน Pack Ticket เดิม
 - `exp = 30`
-- `packTicket = 0` เสมอ (เลิกแจกแล้ว)
-- `gold = (day === 7 ? 2 : 0) + (streak % 30 === 0 ? 5 : 0)` — เพิ่ม weekly trickle +2 ให้ F2P เข้าถึง Evolution/Royal Prime เร็วขึ้น
+- `gold = (day === 7 ? 5 : 0) + (streak % 30 === 0 ? 5 : 0)`
 
 ตัวอย่างรางวัล (30 วันแรก): silver รวม 7,650, gold รวม 13 (4×2 จาก weekly + 5 จาก 30-day bonus)
 
@@ -1429,6 +1425,7 @@ Import การ์ด Evolution/Royal Prime — ต่างจาก `import-c
 | `20260722060000_fantasy_notification_idempotency` | เพิ่ม `Notification.idempotencyKey` (unique) — กัน `runScoring`/reward grant resume หลัง crash แล้วส่ง `FANTASY_SCORE`/`FANTASY_REWARD` ซ้ำ |
 | `20260722110000_add_user_team_name` | เพิ่ม `User.teamName` (nullable, ไม่ unique) |
 | `20260722123732_add_playermatchstat_position_group` | เพิ่ม `PlayerMatchStat.positionGroup` (freeze ตอนกรอกสถิติ เหมือน `clubSide`) + backfill ข้อมูลเดิมจาก `Player.position` ผ่าน `LEFT JOIN` (แถวกำพร้า/ตำแหน่งไม่รู้จักทำให้ migration abort ทันที ไม่ default เงียบๆ) — กัน re-import การ์ดเปลี่ยนกลุ่มตำแหน่งของ TOTW/scoring ย้อนหลัง |
+| `20260724120000_unify_shards_remove_packticket` | ลบ `User.evoShards`/`User.primeShards`/`User.packTicket` รวมเข้า `User.shards` เดียว — backfill ด้วย `INSERT ... SELECT "shards" + "evoShards" + "primeShards"` ในบรรทัดเดียวตอน table-rebuild (idempotent เพราะอ่านจากตารางเก่าที่ยังมีครบ 3 คอลัมน์ ครั้งเดียว ไม่ใช่บวกทับ) |
 
 ---
 

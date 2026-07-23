@@ -13,12 +13,9 @@
 |---|---|---|---|
 | **Silver** | `silver` | เปิด Standard Pack (300/ครั้ง) | Starter Pack, Daily login |
 | **Gold** | `gold` | เปิด Evolution Pack (10/ครั้ง), Royal Prime Pack (20/ครั้ง) | Daily login (เล็กน้อย), เติมเงินจริง (mock deposit) |
-| **Shards** (`shards`) | จากการ์ดซ้ำ tier Bronze/Silver/Gold | แลกเปิด Standard Pack ฟรี | เปิดซองได้การ์ดซ้ำใน pool normal |
-| **Evo Shards** (`evoShards`) | จากการ์ดซ้ำ tier Hero | แลกเปิด Evolution Pack ฟรี | เปิดซองได้การ์ด Evolution ซ้ำ |
-| **Prime Shards** (`primeShards`) | จากการ์ดซ้ำ tier Legend | แลกเปิด Royal Prime Pack ฟรี | เปิดซองได้การ์ด Royal Prime ซ้ำ |
-| `packTicket` | เดิมใช้เปิด Ticket Pack | **ยกเลิกแล้ว** (2026-07-16) เก็บ field ไว้เฉยๆ ไม่มีทางได้เพิ่มอีก | - |
+| **Shards** (`shards`) | จากการ์ดซ้ำทุก tier (Bronze/Silver/Gold/Hero/Legend) รวม pool เดียว | แลกเปิดซองฟรีได้ทั้ง 3 แบบ (ราคาแลกต่างกันตามตาราง Shard Exchange ด้านล่าง) | เปิดซองได้การ์ดซ้ำ (tier ใดก็ได้) |
 
-Shard ทั้ง 3 พูล **แยกกันเด็ดขาด** — shard จาก Standard Pack เอาไปแลก Evolution Pack ไม่ได้ (กันคนใช้ shard ถูกไปแลกซองแพง)
+> **ประวัติ:** ก่อน 2026-07-24 ระบบแยก shard เป็น 3 pool (`shards`/`evoShards`/`primeShards`) ไม่ให้ปนกัน และมี `packTicket` เป็น currency legacy ที่เลิกแจกตั้งแต่ 2026-07-16 — รวมเป็น pool เดียวและลบ `packTicket` ทิ้งเมื่อ 2026-07-24 เพื่อลดความซับซ้อน โดยยอมรับว่าการ์ดซ้ำ tier ต่ำจำนวนมากพอก็เอาไปแลกซองราคาแพงได้เหมือนกัน (ไม่มีการกันแยกที่มาอีกต่อไป) ป้องกันด้วยการตั้งราคาแลกให้ต่างกันมากแทน (ดูหัวข้อ 4)
 
 ---
 
@@ -126,35 +123,25 @@ Cosmetic ตาม gdd.txt ยังไม่ทำ (ยังไม่มีร
 
 ## 4. ระบบ Shard (การ์ดซ้ำ)
 
-ถือการ์ดได้ **1 ใบต่อ 1 การ์ดเท่านั้น** — ถ้าสุ่มได้การ์ดที่มีอยู่แล้ว จะไม่ได้การ์ดซ้ำ แต่แปลงเป็น Shard แทนตาม tier:
+ถือการ์ดได้ **1 ใบต่อ 1 การ์ดเท่านั้น** — ถ้าสุ่มได้การ์ดที่มีอยู่แล้ว จะไม่ได้การ์ดซ้ำ แต่แปลงเป็น Shard แทนตาม tier (รวมเข้า pool `shards` เดียวเสมอ ตั้งแต่ 2026-07-24):
 
-| Tier | Shard ที่ได้ | ลงพูลไหน |
-|---|---|---|
-| Bronze | 5 | `shards` |
-| Silver | 15 | `shards` |
-| Gold | 50 | `shards` |
-| Hero (Evolution) | 100 | `evoShards` |
-| Legend (Royal Prime) | 250 | `primeShards` |
+| Tier | Shard ที่ได้ |
+|---|---|
+| Bronze | 5 |
+| Silver | 15 |
+| Gold | 50 |
+| Hero (Evolution) | 100 |
+| Legend (Royal Prime) | 250 |
 
 ### แลก Shard เป็นซองฟรี (Shard Exchange)
 
-| แลกจาก | Cost | ได้ | คิดเป็นจำนวนการ์ดซ้ำ tier เดียวกัน |
+| แลกจาก `shards` | Cost | ได้ | คิดเป็นจำนวนการ์ดซ้ำ tier เดียวกัน (ตัวอย่าง) |
 |---|---|---|---|
-| `shards` | 500 | Standard Pack ฟรี | 100 ใบ Bronze ซ้ำ หรือ 33 ใบ Silver ซ้ำ หรือ 10 ใบ Gold ซ้ำ |
-| `evoShards` | 500 | Evolution Pack ฟรี | 5 ใบ Hero ซ้ำ |
-| `primeShards` | 1,000 | Royal Prime Pack ฟรี | 4 ใบ Legend ซ้ำ |
+| — | 500 | Standard Pack ฟรี | 100 ใบ Bronze ซ้ำ หรือ 33 ใบ Silver ซ้ำ หรือ 10 ใบ Gold ซ้ำ |
+| — | 2,500 | Evolution Pack ฟรี | 50 ใบ Gold ซ้ำ หรือ 25 ใบ Hero ซ้ำ |
+| — | 6,000 | Royal Prime Pack ฟรี | 120 ใบ Gold ซ้ำ หรือ 24 ใบ Legend ซ้ำ |
 
-> ต้นทุน `shards` ปรับจาก 600 → 500 เมื่อ 2026-07-16 เพื่อลดช่องว่าง rebate ระหว่างซอง (ดูด้านล่าง)
-
-### อัตราคืนกลับ (rebate) เมื่อคอลเลกชันเต็มแล้ว
-
-| ซอง | Shard เฉลี่ยต่อการเปิด 1 ครั้ง | ต้องเปิดกี่ครั้งถึงได้ฟรี 1 ครั้ง | rebate |
-|---|---|---|---|
-| Standard | 106.25 | ~4.7 | **~21.3%** |
-| Evolution | 110 | ~4.6 | **~22%** |
-| Royal Prime | 280 | ~3.6 | **~28%** |
-
-เดิม Standard rebate ~10% (ห่างจาก Evolution/Royal Prime มาก) — ปรับต้นทุนแลกจาก 600 → 500 shard ให้ใกล้เคียงกันมากขึ้น (Royal Prime ยังสูงกว่าเล็กน้อยเพราะราคาซองแพงกว่ามาก ถือว่ายอมรับได้)
+> **ตั้งแต่ 2026-07-24:** ยุบ 3 pool (`shards`/`evoShards`/`primeShards`) เป็น `shards` เดียว — ตั้งใจยอมรับว่าฟาร์มการ์ดซ้ำ tier ต่ำเยอะๆ ก็แลก Evolution/Royal Prime ได้เหมือนกับฟาร์ม Hero/Legend (ไม่มีการกันแยกที่มาอีกต่อไป) แล้วป้องกันด้วยการตั้งราคาแลกให้ห่างกันมากแทน (จำลอง Monte Carlo: F2P ที่ทำกิจกรรมครบทุกวันใช้เวลา ~65 วันสะสมพอแลก Evolution และ ~110 วันสะสมพอแลก Royal Prime — ดูเหตุผลเต็มใน `docs/system-reference.md` §7.10 หรือ handoff การออกแบบ)
 
 ---
 
@@ -339,8 +326,9 @@ Chemistry เต็ม 33/33 → โบนัส rating สูงสุด **+10
 | ระบบเดิม | สถานะ |
 |---|---|
 | Premium Pack | ยกเลิก 2026-07-16 |
-| Ticket Pack + `packTicket` currency | ยกเลิก 2026-07-16 (field ยังอยู่ในฐานข้อมูลแต่ไม่แจกเพิ่มแล้ว) |
+| Ticket Pack + `packTicket` currency | ยกเลิก 2026-07-16, ลบ field ออกจาก schema จริง 2026-07-24 |
 | Pity Counter (การันตี Gold ทุก 10 ครั้ง) | ยกเลิก 2026-07-16 (field `pityCounter` ยังอยู่แต่ไม่ใช้แล้ว) |
+| `evoShards` / `primeShards` (shard แยก pool ตามที่มา) | รวมเข้า `shards` pool เดียว 2026-07-24 |
 
 ---
 

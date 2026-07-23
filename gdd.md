@@ -68,12 +68,9 @@ Login รับรางวัลประจำวัน
 
 **3. EXP** — ใช้เพิ่มระดับ Account ไม่มีมูลค่าซื้อขาย ทุก Level ได้ Silver + (บาง Level ได้ Pack ฟรี — ดูหัวข้อ Level Reward ด้านล่าง)
 
-**4. Pack Ticket** *(legacy)* — เดิมออกแบบไว้ใช้เปิด Ticket Pack แต่ **Ticket Pack ถูกยกเลิกไปแล้ว** ในการรีดีไซน์ระบบซอง (ดู Phase 2) field ยังอยู่ใน schema เผื่ออนาคตแต่ไม่มีจุดแจกให้แล้ว
+**4. Pack Ticket** *(ลบแล้ว 2026-07-24)* — เดิมออกแบบไว้ใช้เปิด Ticket Pack แต่ Ticket Pack ถูกยกเลิกไปแล้วตั้งแต่ Phase 2 field `packTicket` เคยเก็บไว้เผื่ออนาคตแบบไม่แจกเพิ่ม แต่ถูกลบออกจาก schema จริงพร้อมการรวม shard pool ด้านล่าง (ไม่มี currency นี้อีกต่อไป)
 
-**Shard (แยก 3 pool)** — ได้จากการ์ดซ้ำ ใช้แลกเปิดซองฟรี แยกตามที่มาเพื่อรักษามูลค่าของ pool ราคาแพง:
-- `shards` (จากการ์ด tier Bronze/Silver/Gold) → แลก Standard Pack
-- `evoShards` (จากการ์ด tier Hero/Evolution) → แลก Evolution Pack
-- `primeShards` (จากการ์ด tier Legend/Royal Prime) → แลก Royal Prime Pack
+**Shard (pool เดียว ตั้งแต่ 2026-07-24)** — ได้จากการ์ดซ้ำทุก tier รวมกันเป็น `shards` field เดียว (เดิมแยก 3 pool ตามที่มา: `shards`/`evoShards`/`primeShards` — รวมเข้าด้วยกันแล้วเพื่อลดความซับซ้อน โดยยอมรับ tradeoff ว่าฟาร์มการ์ดซ้ำ tier ต่ำเยอะๆ ก็เอาไปแลกซอง tier สูงได้เหมือนกัน ป้องกันด้วยราคาแลกที่ต่างกันมากแทน — ดูตาราง Shard Exchange ใน `docs/game-guide.md` หัวข้อ 4)
 
 รายละเอียดตัวเลข/สูตรทั้งหมด: `docs/game-guide.md` หัวข้อ 1, 4
 

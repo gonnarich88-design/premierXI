@@ -51,8 +51,118 @@ Table Card {
   createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
+    (playerId, category) [unique, name: 'Card_playerId_category_key']
     category [name: 'Card_category_idx']
     tier [name: 'Card_tier_idx']
+  }
+}
+
+Table FantasyEntry {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  gameweekId TEXT [not null, ref: > Gameweek.id]
+  formation TEXT [not null]
+  submittedAt DATETIME
+  updatedAt DATETIME [not null]
+
+  indexes {
+    (userId, gameweekId) [unique, name: 'FantasyEntry_userId_gameweekId_key']
+    gameweekId [name: 'FantasyEntry_gameweekId_idx']
+  }
+}
+
+Table FantasyEntrySlot {
+  id TEXT [pk]
+  entryId TEXT [not null, ref: > FantasyEntry.id]
+  cardId TEXT [not null, ref: > Card.id]
+  playerId TEXT [not null, ref: > Player.id]
+  fantasyPositionGroup TEXT [not null]
+  slotIndex INTEGER [not null]
+  isStarter BOOLEAN [not null]
+  benchPriority INTEGER
+  isCaptain BOOLEAN [not null, default: `false`]
+  isViceCaptain BOOLEAN [not null, default: `false`]
+
+  indexes {
+    (entryId, cardId) [unique, name: 'FantasyEntrySlot_entryId_cardId_key']
+    (entryId, slotIndex) [unique, name: 'FantasyEntrySlot_entryId_slotIndex_key']
+    playerId [name: 'FantasyEntrySlot_playerId_idx']
+  }
+}
+
+Table FantasyGameweekScore {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  gameweekId TEXT [not null, ref: > Gameweek.id]
+  points INTEGER [not null]
+  rank INTEGER
+  rewardTier TEXT
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (userId, gameweekId) [unique, name: 'FantasyGameweekScore_userId_gameweekId_key']
+    (gameweekId, points) [name: 'FantasyGameweekScore_gameweekId_points_idx']
+  }
+}
+
+Table FantasyRewardGrant {
+  id TEXT [pk]
+  userId TEXT [not null, ref: > User.id]
+  periodType TEXT [not null]
+  periodKey TEXT [not null]
+  rewardType TEXT [not null]
+  amount INTEGER
+  packId TEXT
+  grantedAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (userId, periodType, periodKey, rewardType) [unique, name: 'FantasyRewardGrant_userId_periodType_periodKey_rewardType_key']
+    (periodType, periodKey) [name: 'FantasyRewardGrant_periodType_periodKey_idx']
+  }
+}
+
+Table FantasySettlement {
+  id TEXT [pk]
+  periodType TEXT [not null]
+  periodKey TEXT [not null]
+  status TEXT [not null, default: `'PENDING'`]
+  startedAt DATETIME
+  completedAt DATETIME
+
+  indexes {
+    (periodType, periodKey) [unique, name: 'FantasySettlement_periodType_periodKey_key']
+  }
+}
+
+Table Gameweek {
+  id TEXT [pk]
+  number INTEGER [not null, unique]
+  deadline DATETIME [not null]
+  monthKey TEXT [not null]
+  status TEXT [not null, default: `'UPCOMING'`]
+  scoringStartedAt DATETIME
+  scoredAt DATETIME
+  createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    monthKey [name: 'Gameweek_monthKey_idx']
+    status [name: 'Gameweek_status_idx']
+  }
+}
+
+Table Match {
+  id TEXT [pk]
+  gameweekId TEXT [not null, ref: > Gameweek.id]
+  homeClub TEXT [not null]
+  awayClub TEXT [not null]
+  homeScore INTEGER
+  awayScore INTEGER
+  kickoffAt DATETIME
+  status TEXT [not null, default: `'SCHEDULED'`]
+  providerFixtureId TEXT [unique]
+
+  indexes {
+    gameweekId [name: 'Match_gameweekId_idx']
   }
 }
 
@@ -80,6 +190,7 @@ Table Notification {
   href TEXT
   read BOOLEAN [not null, default: `false`]
   createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  idempotencyKey TEXT [unique]
 
   indexes {
     (userId, createdAt) [name: 'Notification_userId_createdAt_idx']
@@ -95,6 +206,29 @@ Table Player {
   league TEXT [not null, default: `'Premier League'`]
   position TEXT [not null]
   createdAt DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (name, club) [unique, name: 'Player_name_club_key']
+  }
+}
+
+Table PlayerMatchStat {
+  id TEXT [pk]
+  matchId TEXT [not null, ref: > Match.id]
+  playerId TEXT [not null, ref: > Player.id]
+  clubSide TEXT [not null]
+  positionGroup TEXT [not null]
+  minutes INTEGER [not null, default: `0`]
+  goals INTEGER [not null, default: `0`]
+  assists INTEGER [not null, default: `0`]
+  yellow INTEGER [not null, default: `0`]
+  red INTEGER [not null, default: `0`]
+  ownGoals INTEGER [not null, default: `0`]
+
+  indexes {
+    (matchId, playerId) [unique, name: 'PlayerMatchStat_matchId_playerId_key']
+    playerId [name: 'PlayerMatchStat_playerId_idx']
+  }
 }
 
 Table Squad {
@@ -123,6 +257,7 @@ Table SquadSlot {
 Table User {
   id TEXT [pk]
   username TEXT [not null, unique]
+  teamName TEXT
   phone TEXT [not null, unique]
   passwordHash TEXT [not null]
   isAdmin BOOLEAN [not null, default: `false`]
@@ -130,10 +265,7 @@ Table User {
   exp INTEGER [not null, default: `0`]
   silver INTEGER [not null, default: `0`]
   gold INTEGER [not null, default: `0`]
-  packTicket INTEGER [not null, default: `0`]
   shards INTEGER [not null, default: `0`]
-  evoShards INTEGER [not null, default: `0`]
-  primeShards INTEGER [not null, default: `0`]
   pityCounter INTEGER [not null, default: `0`]
   loginStreak INTEGER [not null, default: `0`]
   lastClaimDate DATETIME
@@ -170,8 +302,19 @@ Table UserCard {
 // AchievementProgress.userId -> User.id (on delete: CASCADE, on update: CASCADE)
 // Announcement.authorId -> User.id (on delete: SET NULL, on update: CASCADE)
 // Card.playerId -> Player.id (on delete: CASCADE, on update: CASCADE)
+// FantasyEntry.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// FantasyEntry.gameweekId -> Gameweek.id (on delete: CASCADE, on update: CASCADE)
+// FantasyEntrySlot.entryId -> FantasyEntry.id (on delete: CASCADE, on update: CASCADE)
+// FantasyEntrySlot.cardId -> Card.id (on delete: RESTRICT, on update: CASCADE)
+// FantasyEntrySlot.playerId -> Player.id (on delete: RESTRICT, on update: CASCADE)
+// FantasyGameweekScore.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// FantasyGameweekScore.gameweekId -> Gameweek.id (on delete: CASCADE, on update: CASCADE)
+// FantasyRewardGrant.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// Match.gameweekId -> Gameweek.id (on delete: CASCADE, on update: CASCADE)
 // MissionProgress.userId -> User.id (on delete: CASCADE, on update: CASCADE)
 // Notification.userId -> User.id (on delete: CASCADE, on update: CASCADE)
+// PlayerMatchStat.matchId -> Match.id (on delete: CASCADE, on update: CASCADE)
+// PlayerMatchStat.playerId -> Player.id (on delete: CASCADE, on update: CASCADE)
 // Squad.userId -> User.id (on delete: CASCADE, on update: CASCADE)
 // SquadSlot.squadId -> Squad.id (on delete: CASCADE, on update: CASCADE)
 // SquadSlot.cardId -> Card.id (on delete: SET NULL, on update: CASCADE)

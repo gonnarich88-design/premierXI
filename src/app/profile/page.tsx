@@ -27,7 +27,6 @@ export default async function ProfilePage() {
         <Info label="EXP" value={`${user.exp}`} />
         <Info label="Silver" value={user.silver.toLocaleString()} />
         <Info label="Gold" value={user.gold.toLocaleString()} />
-        <Info label="Pack Ticket" value={`${user.packTicket}`} />
         <Info label="Shards" value={`${user.shards}`} />
         <Info label="การ์ดที่มี" value={`${cardCount}`} />
         {user.isAdmin && <Info label="สิทธิ์" value="Admin" />}

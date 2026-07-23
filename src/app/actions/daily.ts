@@ -14,8 +14,6 @@ export async function claimDailyAction(): Promise<ClaimResult> {
 
     const parts = [`+${result.reward.silver} Silver`];
     if (result.reward.gold) parts.push(`+${result.reward.gold} Gold`);
-    if (result.reward.packTicket)
-      parts.push(`+${result.reward.packTicket} Ticket`);
     await createNotification({
       userId,
       type: "DAILY_REWARD",

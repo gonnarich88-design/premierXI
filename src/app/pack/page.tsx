@@ -20,7 +20,6 @@ export default async function PackPage() {
   const shardExchanges = Object.entries(SHARD_EXCHANGE).map(([id, e]) => ({
     id,
     packId: e.packId,
-    field: e.field,
     cost: e.cost,
   }));
 
@@ -31,10 +30,7 @@ export default async function PackPage() {
       wallet={{
         silver: user.silver,
         gold: user.gold,
-        packTicket: user.packTicket,
         shards: user.shards,
-        evoShards: user.evoShards,
-        primeShards: user.primeShards,
       }}
       starterClaimed={user.starterClaimed}
     />

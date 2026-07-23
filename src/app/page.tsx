@@ -90,7 +90,7 @@ async function LoggedInHome({
     exp: number;
     silver: number;
     gold: number;
-    packTicket: number;
+    shards: number;
     starterClaimed: boolean;
   };
 }) {
@@ -141,8 +141,8 @@ async function LoggedInHome({
 
       {/* Currency bar (Silver/Gold ย้ายไปโชว์ค้างที่ header แล้ว) */}
       <StatRow>
-        <Stat label="Ticket" value={user.packTicket.toLocaleString()} />
         <Stat label="การ์ด" value={cardCount.toLocaleString()} />
+        <Stat label="Shards" value={user.shards.toLocaleString()} />
       </StatRow>
 
       {/* Shortcut cards: My Club / PvP / Fantasy */}

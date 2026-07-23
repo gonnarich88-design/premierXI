@@ -12,7 +12,6 @@ export type DailyReward = {
   day: number; // วันในรอบ 1-7
   silver: number;
   exp: number;
-  packTicket: number;
   gold: number;
 };
 
@@ -23,7 +22,7 @@ export const LOGIN_MILESTONES = {
 };
 
 /** รางวัลตาม streak (รอบ 7 วัน + โบนัสทุก 30 วัน)
- * วันที่ 7 ได้ silver bonus ก้อนใหญ่แทน Pack Ticket เดิม (ยกเลิก Ticket Pack แล้ว) + gold เล็กน้อยให้สาย F2P ค่อยๆสะสมไปเปิด Evolution/Royal Prime ได้
+ * วันที่ 7 ได้ silver bonus ก้อนใหญ่ + gold เล็กน้อยให้สาย F2P ค่อยๆสะสมไปเปิด Evolution/Royal Prime ได้
  * calibrate ให้เปิด Standard Pack (300 silver) ได้ประมาณ 1 ครั้งทุก 1-1.5 วันถ้า login ต่อเนื่อง
  */
 export function rewardForStreak(streak: number): DailyReward {
@@ -32,7 +31,6 @@ export function rewardForStreak(streak: number): DailyReward {
     day,
     silver: 100 + day * 30 + (day === 7 ? 300 : 0),
     exp: 30,
-    packTicket: 0,
     gold: (day === 7 ? 5 : 0) + (streak % 30 === 0 ? 5 : 0),
   };
 }
@@ -118,7 +116,6 @@ export async function claimDaily(userId: string, now: Date = new Date()): Promis
       where: { id: userId },
       data: {
         silver: { increment: reward.silver + levelSilverBonus },
-        packTicket: { increment: reward.packTicket },
         gold: { increment: reward.gold + levelGoldBonus },
         loginStreak: streak,
         lastClaimDate: now,

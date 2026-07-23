@@ -77,9 +77,6 @@ export default function DailyClaim({
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
           <Reward label="Silver" value={nextReward.silver} className="text-silver" />
           <Reward label="EXP" value={nextReward.exp} className="text-primary" />
-          {nextReward.packTicket > 0 && (
-            <Reward label="Ticket" value={nextReward.packTicket} className="text-accent" />
-          )}
           {nextReward.gold > 0 && (
             <Reward label="Gold" value={nextReward.gold} className="text-gold" />
           )}
@@ -89,7 +86,6 @@ export default function DailyClaim({
       {claimed && (
         <p className="mt-3 rounded-lg bg-primary/20 px-3 py-2 text-sm text-primary">
           รับแล้ว! +{claimed.silver} Silver
-          {claimed.packTicket ? ` · +${claimed.packTicket} Ticket` : ""}
           {claimed.gold ? ` · +${claimed.gold} Gold` : ""}
         </p>
       )}

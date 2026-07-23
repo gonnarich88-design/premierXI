@@ -11,7 +11,7 @@ import Button from "@/components/ui/Button";
 type PackMeta = {
   id: string;
   name: string;
-  currency: "silver" | "gold" | "packTicket" | "shards" | "evoShards" | "primeShards";
+  currency: "silver" | "gold" | "shards";
   cost: number;
   desc: string;
   fillerRates: { Bronze: number; Silver: number; Gold: number };
@@ -21,17 +21,13 @@ type PackMeta = {
 type ShardExchange = {
   id: string;
   packId: string;
-  field: "shards" | "evoShards" | "primeShards";
   cost: number;
 };
 
 type Wallet = {
   silver: number;
   gold: number;
-  packTicket: number;
   shards: number;
-  evoShards: number;
-  primeShards: number;
 };
 
 type RevealCard = {
@@ -55,10 +51,7 @@ type Reveal = {
 const CURRENCY_LABEL: Record<string, string> = {
   silver: "Silver",
   gold: "Gold",
-  packTicket: "Ticket",
   shards: "Shards",
-  evoShards: "Evo Shards",
-  primeShards: "Prime Shards",
 };
 
 export default function PackShop({
@@ -127,9 +120,7 @@ export default function PackShop({
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
           <span className="text-silver">Silver {wallet.silver.toLocaleString()}</span>
           <span className="text-gold">Gold {wallet.gold}</span>
-          <span className="text-muted">Shards {wallet.shards}</span>
-          <span className="text-accent">Evo Shards {wallet.evoShards}</span>
-          <span className="text-accent">Prime Shards {wallet.primeShards}</span>
+          <span className="text-muted">Shards {wallet.shards.toLocaleString()}</span>
         </div>
       </header>
 
@@ -200,10 +191,10 @@ export default function PackShop({
                   {exchange && (
                     <button
                       onClick={() => runOpen(() => openPackWithShardsAction(exchange.id))}
-                      disabled={wallet[exchange.field] < exchange.cost || phase === "opening"}
+                      disabled={wallet.shards < exchange.cost || phase === "opening"}
                       className="rounded-full border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
                     >
-                      แลก {exchange.cost} {CURRENCY_LABEL[exchange.field]}
+                      แลก {exchange.cost} Shards
                     </button>
                   )}
                 </div>
