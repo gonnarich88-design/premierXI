@@ -65,21 +65,13 @@ body {
 
 body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-}
-
-/* Fixed background layer — works on mobile where background-attachment: fixed is buggy */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
   background-image: radial-gradient(
     85% 60% at 100% 0%,
     rgba(139, 92, 246, 0.3) 0%,
     rgba(124, 58, 237, 0.12) 28%,
     transparent 55%
   );
+  background-attachment: fixed;
 }
 
 /* Hide scrollbars for a more app-like mobile feel */
