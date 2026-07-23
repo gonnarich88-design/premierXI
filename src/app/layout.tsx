@@ -37,7 +37,7 @@ export default async function RootLayout({
   const userId = await getSessionUserId();
   const unread = userId ? await getUnreadCount(userId) : 0;
   const wallet = userId
-    ? await prisma.user.findUnique({ where: { id: userId }, select: { silver: true, gold: true } })
+    ? await prisma.user.findUnique({ where: { id: userId }, select: { silver: true, gold: true, shards: true } })
     : null;
 
   return (
@@ -49,7 +49,7 @@ export default async function RootLayout({
         {/* Mobile-first shell: constrain to a phone width, bottom nav inside */}
         <div className="mx-auto flex min-h-dvh max-w-md flex-col">
           {userId && wallet && (
-            <AppHeader unread={unread} silver={wallet.silver} gold={wallet.gold} />
+            <AppHeader unread={unread} silver={wallet.silver} gold={wallet.gold} shards={wallet.shards} />
           )}
           <main className="flex-1 pb-2">{children}</main>
           <BottomNav />

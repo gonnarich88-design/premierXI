@@ -139,10 +139,9 @@ async function LoggedInHome({
         สวัสดี <span className="font-semibold text-foreground">{user.teamName ?? user.username}</span>
       </p>
 
-      {/* Currency bar (Silver/Gold ย้ายไปโชว์ค้างที่ header แล้ว) */}
+      {/* Currency bar (Silver/Gold/Shards ย้ายไปโชว์ค้างที่ header แล้ว) */}
       <StatRow>
         <Stat label="การ์ด" value={cardCount.toLocaleString()} />
-        <Stat label="Shards" value={user.shards.toLocaleString()} />
       </StatRow>
 
       {/* Shortcut cards: My Club / PvP / Fantasy */}

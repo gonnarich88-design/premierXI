@@ -14,6 +14,7 @@
   --accent: #c084fc;
   --gold: #f5c451;
   --silver: #c9d1e0;
+  --shard: #a855f7;
   --card-grad-hi: #271948;
   --card-grad-lo: #120b24;
   --card-grad-angle: 45deg;
@@ -41,6 +42,7 @@
   --color-accent: var(--accent);
   --color-gold: var(--gold);
   --color-silver: var(--silver);
+  --color-shard: var(--shard);
   --color-bg-deep: var(--bg-deep);
   --color-hub-grad-hi: var(--hub-grad-hi);
   --color-hub-grad-mid: var(--hub-grad-mid);

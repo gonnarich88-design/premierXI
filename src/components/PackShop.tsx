@@ -54,6 +54,23 @@ const CURRENCY_LABEL: Record<string, string> = {
   shards: "Shards",
 };
 
+const CURRENCY_ICON: Record<string, string> = {
+  silver: "/assets/misc/coin-silver-icon.png",
+  gold: "/assets/misc/coin-gold-icon.png",
+  shards: "/assets/misc/shard-icon.png",
+};
+
+function CurrencyIcon({ currency, className }: { currency: string; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- ไฟล์ static ขนาดเล็กคงที่ ดู AppHeader.tsx
+    <img
+      src={CURRENCY_ICON[currency]}
+      alt=""
+      className={`${currency === "shards" ? "object-contain" : "rounded-full object-cover"} ${className ?? ""}`}
+    />
+  );
+}
+
 export default function PackShop({
   packs,
   shardExchanges,
@@ -117,10 +134,19 @@ export default function PackShop({
     <div className="px-4 pt-6">
       <header className="mb-4">
         <h1 className="text-xl font-bold">เปิดซองนักเตะ</h1>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-          <span className="text-silver">Silver {wallet.silver.toLocaleString()}</span>
-          <span className="text-gold">Gold {wallet.gold}</span>
-          <span className="text-muted">Shards {wallet.shards.toLocaleString()}</span>
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-semibold">
+          <span className="flex items-center gap-1">
+            <CurrencyIcon currency="silver" className="h-4 w-4" />
+            <span className="text-silver">{wallet.silver.toLocaleString()}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <CurrencyIcon currency="gold" className="h-4 w-4" />
+            <span className="text-gold">{wallet.gold.toLocaleString()}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <CurrencyIcon currency="shards" className="h-4 w-4" />
+            <span className="text-shard">{wallet.shards.toLocaleString()}</span>
+          </span>
         </div>
       </header>
 
@@ -185,16 +211,20 @@ export default function PackShop({
                     onClick={() => runOpen(() => openPackAction(pack.id))}
                     disabled={!canAfford || phase === "opening"}
                     variant="gradient"
+                    aria-label={`ซื้อด้วย ${pack.cost} ${CURRENCY_LABEL[pack.currency]}`}
                   >
-                    {pack.cost} {CURRENCY_LABEL[pack.currency]}
+                    {pack.cost}
+                    <CurrencyIcon currency={pack.currency} className="h-4 w-4" />
                   </Button>
                   {exchange && (
                     <button
                       onClick={() => runOpen(() => openPackWithShardsAction(exchange.id))}
                       disabled={wallet.shards < exchange.cost || phase === "opening"}
-                      className="rounded-full border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
+                      className="flex items-center gap-1 rounded-full border border-accent px-3 py-1 text-[11px] font-semibold text-accent transition hover:bg-accent/10 disabled:opacity-30"
+                      aria-label={`แลก ${exchange.cost} Shards`}
                     >
-                      แลก {exchange.cost} Shards
+                      แลก {exchange.cost}
+                      <CurrencyIcon currency="shards" className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>

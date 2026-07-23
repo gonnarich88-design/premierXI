@@ -31,7 +31,7 @@ Premier XI เป็นเกมสะสมการ์ดนักฟุตบ
 - PvP (`/pvp`) — matchmaking ผู้เล่น/บอท, simulate สกอร์, RP + 6 tier, season รายเดือน, ฟรี 5 แมตช์/วัน
 - Achievement + Collection rewards (`/achievements`) — 31 รายการ (10 activity + 20 club + 1 meta)
 - Fantasy Premier XI (`/fantasy` bento hub + subpages) — จัดทีม 15 คน (11 ตัวจริง + 4 สำรอง) ต่อ Gameweek, admin กรอกผลบอล (`/admin/fantasy`) คิดคะแนนอัตโนมัติ + auto-substitution + captain 2x, Weekly leaderboard, TOTW, ตารางแข่ง, ข่าว — ครบ phase 7A/7B, **7C (รางวัลรายเดือน) และ 7D (sync ผลจริงจาก API-Football) ยังไม่ทำ**
-- Bottom nav 5 แท็บใหม่ (Home/Store/PvP/Fantasy/My Club) + หน้า My Club hub (`/club`) + ชื่อทีมที่ตั้งเองได้ (`User.teamName`) โชว์แทน username ใน Fantasy leaderboard + Header แสดง Silver/Gold ค้างทุกหน้า
+- Bottom nav 5 แท็บใหม่ (Home/Store/PvP/Fantasy/My Club) + หน้า My Club hub (`/club`) + ชื่อทีมที่ตั้งเองได้ (`User.teamName`) โชว์แทน username ใน Fantasy leaderboard + Header แสดง Silver/Gold/Shards ค้างทุกหน้า (2026-07-24: เพิ่ม Shards เข้า header + ย้าย currency pill ลงแถวที่ 2 ชิดขวา, เปลี่ยนจากตัวเลขสีล้วนเป็นไอคอนรูปเหรียญ/shard จริง — ดู 6.2)
 
 ---
 
@@ -648,11 +648,12 @@ Directive: `"use server"` — ทุกฟังก์ชัน `await requireAd
 - Hook: `useActionState<AuthState, FormData>`
 - แสดงฟอร์ม username / phone / password ตาม mode
 
-### 6.2 `src/components/AppHeader.tsx` — เขียนใหม่ขั้น 11 (currency ค้าง + ไอคอนโปรไฟล์ แทน logout)
+### 6.2 `src/components/AppHeader.tsx` — เขียนใหม่ขั้น 11 (currency ค้าง + ไอคอนโปรไฟล์ แทน logout), currency icon + 2 แถว (2026-07-24)
 
-- Type: Server component
-- Props: `{ unread: number; silver: number; gold: number }` — `layout.tsx` (root) query wallet แล้วส่งเข้ามา
-- แสดงโลโก้ซ้าย, Silver/Gold ค้างขวาบน, กระดิ่งแจ้งเตือนพร้อม badge (ไปหน้า `/notifications`), ไอคอนโปรไฟล์ (ไปหน้า `/profile`)
+- Type: Client component (`"use client"` — ใช้ `usePathname` ซ่อน chrome ในหน้า `/design-system`)
+- Props: `{ unread: number; silver: number; gold: number; shards: number }` — `layout.tsx` (root) query wallet (`silver`/`gold`/`shards`) แล้วส่งเข้ามา
+- 2 แถว: **แถวบน** โลโก้ซ้าย + กระดิ่งแจ้งเตือนพร้อม badge (ไปหน้า `/notifications`) + ไอคอนโปรไฟล์ (ไปหน้า `/profile`) ขวา — **แถวล่าง** currency pill ชิดขวาสุด แสดงครบ 3 สกุล (Silver/Gold/Shards) เป็นไอคอนรูปเหรียญ/shard จริง (`/public/assets/misc/{coin-silver,coin-gold,shard}-icon.png`) + ตัวเลข
+- ไอคอนใช้ `<img>` ธรรมดา (ไม่ใช้ `next/image`) — ไฟล์ optimize ไว้ล่วงหน้าแล้ว (128×128, ~10-40KB/ไฟล์) และ `next/image` optimizer cache แคชค้างเวลาสลับไฟล์ชื่อเดิมซ้ำ (เจอบั๊กจริงตอนเปลี่ยน shard icon รอบที่ 2 — ต้องล้าง `.next/cache/images` ถึงจะหาย) จึงตัด optimizer ออกสำหรับ asset ชุดนี้โดยเฉพาะ
 - **ไม่มีปุ่ม logout แล้ว** — ย้าย logout ไปอยู่แค่ในหน้า `/profile` เท่านั้น
 
 ### 6.3 `src/components/BottomNav.tsx` — เขียนใหม่ขั้น 11 (5 แท็บใหม่)
@@ -676,6 +677,7 @@ Directive: `"use server"` — ทุกฟังก์ชัน `await requireAd
 - เรียก `openPackAction`, `openPackWithShardsAction`, `openStarterPackAction`
 - แสดง overlay reveal แบบ grid เดียวกันทั้ง Starter Pack (11 ใบ) และซองปกติ (5 ใบ) — badge เด่นบนใบที่ `isSpecial=true`, ข้อความ "ซ้ำ +N" บนใบซ้ำ
 - ปุ่มซื้อปกติ + ปุ่ม "แลก N Shard" แยกต่างหากถ้า pack นั้นมี shard exchange
+- **(2026-07-24)** wallet bar บนสุด + ปุ่มซื้อ + ปุ่มแลก shard ทั้งหมดใช้ไอคอนรูปเหรียญ/shard จริงแทน label ข้อความ (`CurrencyIcon` helper ในไฟล์เดียวกัน, asset เดียวกับ `AppHeader.tsx` — ดู 6.2) — ปุ่มมี `aria-label` บอกชื่อสกุลเงินเต็มไว้แทน เพราะ icon ใช้ `alt=""`
 
 ### 6.6 `src/components/PlayerCard.tsx`
 
